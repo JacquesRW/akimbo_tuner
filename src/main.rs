@@ -37,14 +37,14 @@ impl Position {
         let mut mg = 0;
         let mut eg = 0;
         for i in 0..self.counters[0] {
-            mg += PARAMS[self.psts[0][i]] as i32;
-            eg += PARAMS[self.psts[0][i] + 384] as i32;
+            mg += PARAMS[self.psts[0][i]];
+            eg += PARAMS[self.psts[0][i] + 384];
         }
         for i in 0..self.counters[1] {
-            mg -= PARAMS[self.psts[1][i]] as i32;
-            eg -= PARAMS[self.psts[1][i] + 384] as i32;
+            mg -= PARAMS[self.psts[1][i]];
+            eg -= PARAMS[self.psts[1][i] + 384];
         }
-        ((p * mg + (TPHASE - p) * eg) / TPHASE) as i16
+        ((p * mg as i32 + (TPHASE - p) * eg as i32) / TPHASE) as i16
     }
 }
 
@@ -152,9 +152,9 @@ fn main() {
 
     // OPTIMISING K VALUE
     time = Instant::now();
-    let k = optimise_k(0.4, 0.01);
+    let k = optimise_k(0.4, 0.001);
     let mut best_error = calculate_error(k);
-    println!("optimal k: {:.6}, error: {:.6}, time: {:.2}s", k, best_error, time.elapsed().as_millis() as f64 / 1000.0);
+    println!("optimal k: {:.3}, error: {:.6}, time: {:.2}s", k, best_error, time.elapsed().as_millis() as f64 / 1000.0);
 
     // TEXEL TUNING
     let mut improved = true;
