@@ -130,7 +130,7 @@ fn main() {
     unsafe {
 
     // LOADING POSITIONS
-    let time = Instant::now();
+    let mut time = Instant::now();
     NUM = 0;
 
     let file = match File::open("set.epd") {
@@ -151,15 +151,16 @@ fn main() {
     println!("loaded {} positions in {} seconds ({}/sec)", NUM, elapsed as f64 / 1000.0, NUM * 1000 / elapsed as usize);
 
     // OPTIMISING K VALUE
-    let k = optimise_k(1.0, 0.01);
+    time = Instant::now();
+    let k = optimise_k(0.4, 0.01);
     let mut best_error = calculate_error(k);
-    println!("Initial error: {}, with optimal K: {}", best_error, k);
+    println!("optimal k: {:.6}, error: {:.6}, time: {:.2}s", k, best_error, time.elapsed().as_millis() as f64 / 1000.0);
 
     // TEXEL TUNING
     let mut improved = true;
     let mut count = 1;
     while improved {
-        let runtime = Instant::now();
+        time = Instant::now();
         improved = false;
         for (i, param) in PARAMS.iter_mut().enumerate() {
             *param += IMPROVES[i];
@@ -179,7 +180,7 @@ fn main() {
                 }
             }
         }
-        println!("epoch {}: {}ms, error: {}", count, runtime.elapsed().as_millis(), best_error);
+        println!("epoch {}: {:.2}s, error: {:.6}", count, time.elapsed().as_millis() as f64 / 1000.0, best_error);
         count += 1;
     }
     println!("Finished optimisation.");
