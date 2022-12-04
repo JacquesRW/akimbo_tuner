@@ -33,9 +33,9 @@ struct Position {
 
 impl Position {
     unsafe fn eval(&self) -> i16 {
-        let p = self.phase as i32;
-        let mut mg = 0;
-        let mut eg = 0;
+        let p: i32 = self.phase as i32;
+        let mut mg: i16 = 0;
+        let mut eg: i16 = 0;
         for i in 0..self.counters[0] {
             mg += PARAMS[self.psts[0][i]];
             eg += PARAMS[self.psts[0][i] + 384];
@@ -52,9 +52,9 @@ fn parse_epd(s: &str) -> Position {
     let commands: Vec<&str> = s.split("c9").map(|v| v.trim()).collect();
 
     // parsing fen
-    let mut phase = 0;
-    let mut psts = [[0; 16]; 2];
-    let mut counters = [0, 0];
+    let mut phase: i16 = 0;
+    let mut psts: [[usize; 16]; 2] = [[0; 16]; 2];
+    let mut counters: [usize; 2] = [0, 0];
     let mut idx: usize = 63;
     let fen: &str = commands[0].split_whitespace().collect::<Vec<&str>>()[0];
     let rows: Vec<&str> = fen.split('/').collect();
@@ -77,7 +77,7 @@ fn parse_epd(s: &str) -> Position {
     phase = std::cmp::min(phase, TPHASE as i16);
 
     // parsing result
-    let result = match commands[1] {
+    let result: f64 = match commands[1] {
         "\"1-0\";" => 1.0,
         "\"1/2-1/2\";" => 0.5,
         _ => 0.0
@@ -92,7 +92,7 @@ fn sigmoid(k: f64, x: f64) -> f64 {
 }
 
 unsafe fn calculate_error(k: f64) -> f64 {
-    let mut error = 0.0;
+    let mut error: f64 = 0.0;
     for pos in &POSITIONS {
         error += (pos.result - sigmoid(k, pos.eval() as f64 / 100.0)).powi(2);
     }
@@ -100,14 +100,14 @@ unsafe fn calculate_error(k: f64) -> f64 {
 }
 
 unsafe fn optimise_k(mut initial_guess: f64, step_size: f64) -> f64 {
-    let mut best_error = calculate_error(initial_guess);
-    let step = if calculate_error(initial_guess - step_size) < calculate_error(initial_guess + step_size) {
+    let mut best_error: f64 = calculate_error(initial_guess);
+    let step: f64 = if calculate_error(initial_guess - step_size) < calculate_error(initial_guess + step_size) {
         -step_size
     } else {
         step_size
     };
     loop {
-        let new_error = calculate_error(initial_guess + step);
+        let new_error: f64 = calculate_error(initial_guess + step);
         if new_error < best_error {
             initial_guess += step;
             best_error = new_error;
@@ -130,10 +130,10 @@ fn main() {
     unsafe {
 
     // LOADING POSITIONS
-    let mut time = Instant::now();
+    let mut time: Instant = Instant::now();
     NUM = 0;
 
-    let file = match File::open("set.epd") {
+    let file: File = match File::open("set.epd") {
         Ok(f) => f,
         _ => {
             println!("Couldn't load file!");
@@ -143,34 +143,34 @@ fn main() {
     };
 
     for line in BufReader::new(file).lines(){
-        let pos = parse_epd(&line.unwrap());
+        let pos: Position = parse_epd(&line.unwrap());
         NUM += 1;
         POSITIONS.push(pos);
     }
-    let elapsed = time.elapsed().as_millis();
+    let elapsed: u128 = time.elapsed().as_millis();
     println!("loaded {} positions in {} seconds ({}/sec)", NUM, elapsed as f64 / 1000.0, NUM * 1000 / elapsed as usize);
 
     // OPTIMISING K VALUE
     time = Instant::now();
-    let k = optimise_k(0.4, 0.001);
-    let mut best_error = calculate_error(k);
+    let k: f64 = optimise_k(0.4, 0.001);
+    let mut best_error: f64 = calculate_error(k);
     println!("optimal k: {:.3}, error: {:.6}, time: {:.2}s", k, best_error, time.elapsed().as_millis() as f64 / 1000.0);
 
     // TEXEL TUNING
-    let mut improved = true;
-    let mut count = 1;
+    let mut improved: bool = true;
+    let mut count: i32 = 1;
     while improved {
         time = Instant::now();
         improved = false;
         for (i, param) in PARAMS.iter_mut().enumerate() {
             *param += IMPROVES[i];
-            let new_error = calculate_error(k);
+            let new_error: f64 = calculate_error(k);
             if new_error < best_error {
                 best_error = new_error;
                 improved = true;
             } else {
                 *param -= 2 * IMPROVES[i];
-                let new_error2 = calculate_error(k);
+                let new_error2: f64 = calculate_error(k);
                 if new_error2 < best_error {
                     best_error = new_error2;
                     improved = true;
@@ -188,7 +188,7 @@ fn main() {
 
     // wait to exit
     loop {
-        let mut input = String::new();
+        let mut input: String = String::new();
         std::io::stdin().read_line(&mut input).unwrap();
         let commands: Vec<&str> = input.split(' ').map(|v| v.trim()).collect();
         match commands[0] {
