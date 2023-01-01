@@ -1,6 +1,3 @@
-mod params;
-
-use crate::params::INITIAL_PARAMS;
 use std::{fs::File, io::{BufRead, BufReader}, time::{Duration, Instant}};
 
 const PHASE_VALS: [i16; 7] = [0, 1, 1, 2, 4, 0, 0];
@@ -12,6 +9,12 @@ struct Position {
     counters: [usize; 2],
     phase: i16,
     result: f64,
+}
+
+struct Stuff {
+    params: [i16; 768],
+    positions: Vec<Position>,
+    num: f64,
 }
 
 impl Position {
@@ -74,23 +77,23 @@ fn sigmoid(k: f64, x: f64) -> f64 {
     1.0 / (1.0 + 10f64.powf(- k * x))
 }
 
-fn calculate_error(k: f64, num: f64, positions: &Vec<Position>, params: &[i16; 768]) -> f64 {
+fn calculate_error(k: f64, stuff: &Stuff) -> f64 {
     let mut error: f64 = 0.0;
-    for pos in positions {
-        error += (pos.result - sigmoid(k, pos.eval(params) as f64 / 100.0)).powi(2);
+    for pos in &stuff.positions {
+        error += (pos.result - sigmoid(k, pos.eval(&stuff.params) as f64 / 100.0)).powi(2);
     }
-    error / num
+    error / stuff.num
 }
 
-fn optimise_k(mut initial_guess: f64, step_size: f64, num: f64, positions: &Vec<Position>, params: &[i16; 768]) -> f64 {
-    let mut best_error: f64 = calculate_error(initial_guess, num, positions, params);
-    let step: f64 = if calculate_error(initial_guess - step_size, num, positions, params) < calculate_error(initial_guess + step_size, num, positions, params) {
+fn optimise_k(mut initial_guess: f64, step_size: f64, stuff: &Stuff) -> f64 {
+    let mut best_error: f64 = calculate_error(initial_guess, stuff);
+    let step: f64 = if calculate_error(initial_guess - step_size, stuff) < calculate_error(initial_guess + step_size, stuff) {
         -step_size
     } else {
         step_size
     };
     loop {
-        let new_error: f64 = calculate_error(initial_guess + step, num, positions, params);
+        let new_error: f64 = calculate_error(initial_guess + step, stuff);
         if new_error < best_error {
             initial_guess += step;
             best_error = new_error;
@@ -110,12 +113,18 @@ fn print_psts(params: &[i16; 768]) {
 }
 
 fn main() {
-    let mut params = INITIAL_PARAMS;
+    let mut stuff: Stuff = Stuff {
+        params: [
+            [100; 64], [300; 64], [300; 64], [500; 64], [900; 64], [0; 64],
+            [100; 64], [300; 64], [300; 64], [500; 64], [900; 64], [0; 64]
+        ].concat().try_into().unwrap(),
+        positions: Vec::new(),
+        num: 0.0,
+    };
 
     // LOADING positions
     let mut time: Instant = Instant::now();
     let mut n: usize = 0;
-    let mut positions: Vec<Position> = Vec::new();
 
     let file: File = match File::open("set.epd") {
         Ok(f) => f,
@@ -129,17 +138,17 @@ fn main() {
     for line in BufReader::new(file).lines(){
         let pos: Position = parse_epd(&line.unwrap());
         n += 1;
-        positions.push(pos);
+        stuff.positions.push(pos);
     }
     let elapsed: u128 = time.elapsed().as_millis();
     println!("loaded {} positions in {} seconds ({}/sec)", n, elapsed as f64 / 1000.0, n * 1000 / elapsed as usize);
 
-    let num: f64 = n as f64;
+    stuff.num = n as f64;
 
     // OPTIMISING K VALUE
     time = Instant::now();
-    let k: f64 = optimise_k(0.4, 0.001, num, &positions, &params);
-    let mut best_error: f64 = calculate_error(k, num, &positions, &params);
+    let k: f64 = optimise_k(0.4, 0.001, &stuff);
+    let mut best_error: f64 = calculate_error(k, &stuff);
     println!("optimal k: {:.3}, error: {:.6}, time: {:.2}s", k, best_error, time.elapsed().as_millis() as f64 / 1000.0);
 
     // stores the direction of change in value that last caused an improvement
@@ -153,21 +162,21 @@ fn main() {
     while improved {
         time = Instant::now();
         improved = false;
-        for i in 0..768 {
-            params[i] += improves[i];
-            let new_error: f64 = calculate_error(k, num, &positions, &params);
+        for (i, dir) in improves.iter_mut().enumerate() {
+            stuff.params[i] += *dir;
+            let new_error: f64 = calculate_error(k, &stuff);
             if new_error < best_error {
                 best_error = new_error;
                 improved = true;
             } else {
-                params[i] -= 2 * improves[i];
-                let new_error2: f64 = calculate_error(k, num, &positions, &params);
+                stuff.params[i] -= 2 * (*dir);
+                let new_error2: f64 = calculate_error(k, &stuff);
                 if new_error2 < best_error {
                     best_error = new_error2;
                     improved = true;
-                    improves[i] = -improves[i];
+                    *dir = -(*dir);
                 } else {
-                    params[i] += improves[i];
+                    stuff.params[i] += *dir;
                 }
             }
         }
@@ -175,7 +184,7 @@ fn main() {
         count += 1;
     }
     println!("Finished optimisation.");
-    print_psts(&params);
+    print_psts(&stuff.params);
 
     // wait to exit
     loop {
