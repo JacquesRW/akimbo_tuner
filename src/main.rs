@@ -1,6 +1,6 @@
 use std::{fs::File, io::{BufRead, BufReader}, time::{Duration, Instant}, thread::{scope, Scope, ScopedJoinHandle}};
 
-const THREADS: usize = 6;
+const THREADS: usize = 4;
 const PHASE_VALS: [i16; 7] = [0, 1, 1, 2, 4, 0, 0];
 const TPHASE: i32 = 24;
 
@@ -9,13 +9,13 @@ struct Position {
     psts: [[usize; 16]; 2],
     counters: [usize; 2],
     phase: i16,
-    result: f64,
+    result: f32,
 }
 
 struct Stuff {
     params: [i16; 768],
     positions: Vec<Position>,
-    num: f64,
+    num: f32,
 }
 
 impl Position {
@@ -64,7 +64,7 @@ fn parse_epd(s: &str) -> Position {
     phase = std::cmp::min(phase, TPHASE as i16);
 
     // parsing result
-    let result: f64 = match commands[1] {
+    let result: f32 = match commands[1] {
         "\"1-0\";" => 1.0,
         "\"1/2-1/2\";" => 0.5,
         _ => 0.0
@@ -74,20 +74,20 @@ fn parse_epd(s: &str) -> Position {
 }
 
 #[inline(always)]
-fn sigmoid(k: f64, x: f64) -> f64 {
-    1.0 / (1.0 + 10f64.powf(- k * x))
+fn sigmoid(k: f32, x: f32) -> f32 {
+    1.0 / (1.0 + 10f32.powf(- k * x))
 }
 
-fn calculate_error(k: f64, stuff: &Stuff) -> f64 {
+fn calculate_error(k: f32, stuff: &Stuff) -> f32 {
     let ppt: usize = stuff.positions.len() / THREADS;
-    let mut total_error: f64 = 0.0;
+    let mut total_error: f32 = 0.0;
     scope(|s: &Scope| {
-        let mut threads: Vec<ScopedJoinHandle<f64>> = Vec::new();
+        let mut threads: Vec<ScopedJoinHandle<f32>> = Vec::new();
         for i in 0..THREADS {
             threads.push(s.spawn(move || {
-                let mut error: f64 = 0.0;
+                let mut error: f32 = 0.0;
                 for pos in &stuff.positions[i*ppt..(i+1)*ppt] {
-                    error += (pos.result - sigmoid(k, pos.eval(&stuff.params) as f64 / 100.0)).powi(2);
+                    error += (pos.result - sigmoid(k, pos.eval(&stuff.params) as f32 / 100.0)).powi(2);
                 }
                 error
             }));
@@ -99,15 +99,15 @@ fn calculate_error(k: f64, stuff: &Stuff) -> f64 {
     total_error / stuff.num
 }
 
-fn optimise_k(mut initial_guess: f64, step_size: f64, stuff: &Stuff) -> f64 {
-    let mut best_error: f64 = calculate_error(initial_guess, stuff);
-    let step: f64 = if calculate_error(initial_guess - step_size, stuff) < calculate_error(initial_guess + step_size, stuff) {
+fn optimise_k(mut initial_guess: f32, step_size: f32, stuff: &Stuff) -> f32 {
+    let mut best_error: f32 = calculate_error(initial_guess, stuff);
+    let step: f32 = if calculate_error(initial_guess - step_size, stuff) < calculate_error(initial_guess + step_size, stuff) {
         -step_size
     } else {
         step_size
     };
     loop {
-        let new_error: f64 = calculate_error(initial_guess + step, stuff);
+        let new_error: f32 = calculate_error(initial_guess + step, stuff);
         if new_error < best_error {
             initial_guess += step;
             best_error = new_error;
@@ -155,15 +155,15 @@ fn main() {
         stuff.positions.push(pos);
     }
     let elapsed: u128 = time.elapsed().as_millis();
-    println!("loaded {} positions in {} seconds ({}/sec)", n, elapsed as f64 / 1000.0, n * 1000 / elapsed as usize);
+    println!("loaded {} positions in {} seconds ({}/sec)", n, elapsed as f32 / 1000.0, n * 1000 / elapsed as usize);
 
-    stuff.num = n as f64;
+    stuff.num = n as f32;
 
     // OPTIMISING K VALUE
     time = Instant::now();
-    let k: f64 = optimise_k(0.4, 0.001, &stuff);
-    let mut best_error: f64 = calculate_error(k, &stuff);
-    println!("optimal k: {:.3}, error: {:.6}, time: {:.2}s", k, best_error, time.elapsed().as_millis() as f64 / 1000.0);
+    let k: f32 = optimise_k(0.4, 0.001, &stuff);
+    let mut best_error: f32 = calculate_error(k, &stuff);
+    println!("optimal k: {:.3}, error: {:.6}, time: {:.2}s", k, best_error, time.elapsed().as_millis() as f32 / 1000.0);
 
     // stores the direction of change in value that last caused an improvement
     // in error, based on assumption reverting a change is unlikely to help, to
@@ -178,13 +178,13 @@ fn main() {
         improved = false;
         for (i, dir) in improves.iter_mut().enumerate() {
             stuff.params[i] += *dir;
-            let new_error: f64 = calculate_error(k, &stuff);
+            let new_error: f32 = calculate_error(k, &stuff);
             if new_error < best_error {
                 best_error = new_error;
                 improved = true;
             } else {
                 stuff.params[i] -= 2 * (*dir);
-                let new_error2: f64 = calculate_error(k, &stuff);
+                let new_error2: f32 = calculate_error(k, &stuff);
                 if new_error2 < best_error {
                     best_error = new_error2;
                     improved = true;
@@ -194,7 +194,7 @@ fn main() {
                 }
             }
         }
-        println!("epoch {}: {:.2}s, error: {:.6}", count, time.elapsed().as_millis() as f64 / 1000.0, best_error);
+        println!("epoch {}: {:.2}s, error: {:.6}", count, time.elapsed().as_millis() as f32 / 1000.0, best_error);
         count += 1;
     }
     println!("Finished optimisation.");
