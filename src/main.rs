@@ -37,7 +37,6 @@ impl Position {
 
 fn parse_epd(s: &str) -> Position {
     let commands: Vec<&str> = s.split("c9").map(|v| v.trim()).collect();
-
     // parsing fen
     let mut phase: i16 = 0;
     let mut psts: [[usize; 16]; 2] = [[0; 16]; 2];
@@ -62,14 +61,12 @@ fn parse_epd(s: &str) -> Position {
         }
     }
     phase = std::cmp::min(phase, TPHASE as i16);
-
     // parsing result
     let result: f32 = match commands[1] {
         "\"1-0\";" => 1.0,
         "\"1/2-1/2\";" => 0.5,
         _ => 0.0
     };
-
     Position {psts, counters, phase, result}
 }
 
@@ -103,17 +100,15 @@ fn optimise_k(mut initial_guess: f32, step_size: f32, stuff: &Stuff) -> f32 {
     let mut best_error: f32 = calculate_error(initial_guess, stuff);
     let step: f32 = if calculate_error(initial_guess - step_size, stuff) < calculate_error(initial_guess + step_size, stuff) {
         -step_size
-    } else {
+    }
+    else {
         step_size
     };
     loop {
         let new_error: f32 = calculate_error(initial_guess + step, stuff);
-        if new_error < best_error {
-            initial_guess += step;
-            best_error = new_error;
-        } else {
-            break;
-        }
+        if new_error >= best_error {break}
+        initial_guess += step;
+        best_error = new_error;
     }
     initial_guess
 }
@@ -127,28 +122,22 @@ fn print_psts(params: &[i16; 768]) {
 }
 
 fn main() {
+    // LOADING POSITIONS
     let mut stuff: Stuff = Stuff {
         params: [
             [100; 64], [300; 64], [300; 64], [500; 64], [900; 64], [0; 64],
-            [100; 64], [300; 64], [300; 64], [500; 64], [900; 64], [0; 64]
+            [100; 64], [300; 64], [300; 64], [500; 64], [900; 64], [0; 64],
         ].concat().try_into().unwrap(),
         positions: Vec::new(),
         num: 0.0,
     };
-
-    // LOADING positions
     let mut time: Instant = Instant::now();
     let mut n: usize = 0;
-
-    let file: File = match File::open("set.epd") {
-        Ok(f) => f,
-        _ => {
-            println!("Couldn't load file!");
-            std::thread::sleep(Duration::from_secs(5));
-            return
-        }
-    };
-
+    let file: File = File::open("set.epd").unwrap_or_else(move |_| {
+        println!("Couldn't load file!");
+        std::thread::sleep(Duration::from_secs(5));
+        std::process::exit(1)
+    });
     for line in BufReader::new(file).lines(){
         let pos: Position = parse_epd(&line.unwrap());
         n += 1;
@@ -156,7 +145,6 @@ fn main() {
     }
     let elapsed: u128 = time.elapsed().as_millis();
     println!("loaded {} positions in {} seconds ({}/sec)", n, elapsed as f32 / 1000.0, n * 1000 / elapsed as usize);
-
     stuff.num = n as f32;
 
     // OPTIMISING K VALUE
@@ -165,12 +153,8 @@ fn main() {
     let mut best_error: f32 = calculate_error(k, &stuff);
     println!("optimal k: {:.3}, error: {:.6}, time: {:.2}s", k, best_error, time.elapsed().as_millis() as f32 / 1000.0);
 
-    // stores the direction of change in value that last caused an improvement
-    // in error, based on assumption reverting a change is unlikely to help, to
-    // keep moving value in the same direction is better - small peerformance improvement
-    let mut improves: [i16; 768] = [1; 768];
-
     // TEXEL TUNING
+    let mut improves: [i16; 768] = [1; 768];
     let mut improved: bool = true;
     let mut count: i32 = 1;
     while improved {
@@ -200,7 +184,7 @@ fn main() {
     println!("Finished optimisation.");
     print_psts(&stuff.params);
 
-    // wait to exit
+    // WAIT FOR EXIT
     loop {
         let mut input: String = String::new();
         std::io::stdin().read_line(&mut input).unwrap();

@@ -1,6 +1,7 @@
 # akimbo_tuner
 
-This repository contains code used for tuning [akimbo](https://github.com/JacquesRW/akimbo)'s piece-square tables.
+This repository contains a multithreaded implementation of Texel's Tuning Method in under 200 lines of code. It is used to tune
+[akimbo](https://github.com/JacquesRW/akimbo)'s piece-square tables.
 
 ### Running
 To compile, run ```cargo build --release```.
