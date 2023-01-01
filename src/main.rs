@@ -1,9 +1,10 @@
-use std::{fs::File, io::{BufRead, BufReader}, time::{Duration, Instant}};
+use std::{fs::File, io::{BufRead, BufReader}, time::{Duration, Instant}, thread::{scope, Scope, ScopedJoinHandle}};
 
+const THREADS: usize = 6;
 const PHASE_VALS: [i16; 7] = [0, 1, 1, 2, 4, 0, 0];
 const TPHASE: i32 = 24;
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 struct Position {
     psts: [[usize; 16]; 2],
     counters: [usize; 2],
@@ -78,11 +79,24 @@ fn sigmoid(k: f64, x: f64) -> f64 {
 }
 
 fn calculate_error(k: f64, stuff: &Stuff) -> f64 {
-    let mut error: f64 = 0.0;
-    for pos in &stuff.positions {
-        error += (pos.result - sigmoid(k, pos.eval(&stuff.params) as f64 / 100.0)).powi(2);
-    }
-    error / stuff.num
+    let ppt: usize = stuff.positions.len() / THREADS;
+    let mut total_error: f64 = 0.0;
+    scope(|s: &Scope| {
+        let mut threads: Vec<ScopedJoinHandle<f64>> = Vec::new();
+        for i in 0..THREADS {
+            threads.push(s.spawn(move || {
+                let mut error: f64 = 0.0;
+                for pos in &stuff.positions[i*ppt..(i+1)*ppt] {
+                    error += (pos.result - sigmoid(k, pos.eval(&stuff.params) as f64 / 100.0)).powi(2);
+                }
+                error
+            }));
+        }
+        for thread in threads {
+            total_error += thread.join().unwrap()
+        }
+    });
+    total_error / stuff.num
 }
 
 fn optimise_k(mut initial_guess: f64, step_size: f64, stuff: &Stuff) -> f64 {
