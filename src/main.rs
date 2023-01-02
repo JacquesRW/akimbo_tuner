@@ -21,7 +21,7 @@ struct Position {
     result: f32,
 }
 
-struct Stuff {
+struct Data {
     params: [i16; 768],
     positions: Vec<Position>,
     num: f32,
@@ -31,12 +31,7 @@ struct Stuff {
 impl Position {
     fn from_epd(s: &str) -> Self {
         let mut commands = s.split("c9").map(str::trim);
-        let fen: &str = commands
-            .next()
-            .expect("at least one")
-            .split_whitespace()
-            .next()
-            .expect("should be non-empty");
+        let fen: &str = commands.next().expect("at least one part");
         let mut pos = Position {
             psts: [[0; 16]; 2],
             counters: [0; 2],
@@ -49,7 +44,9 @@ impl Position {
         };
         let (mut row, mut col): (u16, u16) = (7, 0);
         for ch in fen.chars() {
-            if ch == '/' {
+            if ch == ' ' {
+                break;
+            } else if ch == '/' {
                 row -= 1;
                 col = 0;
             } else if ('1'..='8').contains(&ch) {
@@ -72,7 +69,7 @@ impl Position {
     }
 
     #[inline]
-    fn error(&self, k: f32, params: &[i16; NUM_PARAMS]) -> f32 {
+    fn err(&self, k: f32, params: &[i16; NUM_PARAMS]) -> f32 {
         let p: i32 = self.phase as i32;
         let mut mg: i16 = 0;
         let mut eg: i16 = 0;
@@ -89,16 +86,17 @@ impl Position {
     }
 }
 
-fn error(k: f32, stuff: &Stuff) -> f32 {
+fn error(k: f32, data: &Data) -> f32 {
+    let params = &data.params;
     let total: f32 = scope(|s| {
-        stuff.positions
-            .chunks(stuff.chunk_size)
-            .map(|chunk| s.spawn(move || chunk.iter().fold(0.0, |err, p| err + p.error(k, &stuff.params))))
+        data.positions
+            .chunks(data.chunk_size)
+            .map(|chunk| s.spawn(move || chunk.iter().fold(0.0, |err, p| err + p.err(k, params))))
             .collect::<Vec<ScopedJoinHandle<f32>>>()
             .into_iter()
             .fold(0.0, |err, p| err + p.join().unwrap_or(0.0))
     });
-    total / stuff.num
+    total / data.num
 }
 
 fn elapsed(time: &Instant) -> f32 {
@@ -110,7 +108,7 @@ fn main() {
     println!("{threads} threads available");
 
     // LOADING POSITIONS
-    let mut stuff = Stuff {
+    let mut data = Data {
         params: INITIAL_PARAMS
             .concat()
             .concat()
@@ -122,28 +120,30 @@ fn main() {
     };
     let mut time: Instant = Instant::now();
     let file: File = File::open("set.epd").expect("should have provided correct file");
-    stuff.num = BufReader::new(file).lines().into_iter().fold(0, |err, ln| {
-        stuff.positions.push(Position::from_epd(&ln.unwrap()));
+    data.num = BufReader::new(file).lines().into_iter().fold(0, |err, ln| {
+        data.positions.push(Position::from_epd(&ln.unwrap()));
         err + 1
     }) as f32;
-    stuff.chunk_size = stuff.positions.len() / threads;
+    data.chunk_size = data.positions.len() / threads;
+    let elapse = elapsed(&time);
     println!(
-        "loaded {} positions in {} seconds",
-        stuff.num as u64,
-        elapsed(&time)
+        "positions {} time {}s ({}/sec)",
+        data.num as u64,
+        elapse,
+        data.num / elapse
     );
 
     // OPTIMISING K VALUE
     time = Instant::now();
-    let step: f32 = (error(INIT - STEP, &stuff) - error(INIT + STEP, &stuff)).signum() * STEP;
+    let step: f32 = (error(INIT - STEP, &data) - error(INIT + STEP, &data)).signum() * STEP;
     let mut k: f32 = INIT;
-    let (mut best, mut new): (f32, f32) = (error(k, &stuff), error(k + step, &stuff));
+    let (mut best, mut new): (f32, f32) = (error(k, &data), error(k + step, &data));
     while new <= best {
         k += step;
         best = new;
-        new = error(k + step, &stuff);
+        new = error(k + step, &data);
     }
-    println!("k: {k:.3} in {}s", elapsed(&time));
+    println!("k = {k:.3} time {}s error {best:.6}", elapsed(&time));
 
     // TEXEL TUNING
     let mut cache: [i16; NUM_PARAMS] = [1; NUM_PARAMS];
@@ -152,26 +152,26 @@ fn main() {
         time = Instant::now();
         improved = false;
         for (i, dir) in cache.iter_mut().enumerate() {
-            stuff.params[i] += *dir;
-            new = error(k, &stuff);
+            data.params[i] += *dir;
+            new = error(k, &data);
             if new < best {
                 best = new;
                 improved = true;
             } else {
-                stuff.params[i] -= 2 * (*dir);
-                new = error(k, &stuff);
+                data.params[i] -= 2 * (*dir);
+                new = error(k, &data);
                 if new < best {
                     best = new;
                     improved = true;
                     *dir = -(*dir);
                 } else {
-                    stuff.params[i] += *dir;
+                    data.params[i] += *dir;
                 }
             }
         }
-        println!("epoch time {:.2}s error {best:.6}", elapsed(&time));
+        println!("epoch time {}s error {best:.6}", elapsed(&time));
     }
-    (0..12).for_each(|i| println!("{:?},", &stuff.params[i * 64..(i + 1) * 64]));
+    (0..12).for_each(|i| println!("{:?},", &data.params[i * 64..(i + 1) * 64]));
 
     // WAIT FOR EXIT
     stdin().read_line(&mut String::new()).expect("parsable");
