@@ -1,6 +1,6 @@
 use std::{cmp, fs::File, io::{stdin, BufRead, BufReader}, process, time::Instant, thread};
 
-const THREADS: usize = 4;
+const SPARE_THREADS: usize = 0;
 const PIECE_CHARS: [char; 12] = ['P','N','B','R','Q','K','p','n','b','r','q','k'];
 const PHASE_VALS: [i16; 7] = [0, 1, 1, 2, 4, 0, 0];
 const TPHASE: i32 = 24;
@@ -77,10 +77,10 @@ impl Stuff {
     }
 }
 
-fn error(k: f32, stuff: &Stuff) -> f32 {
-    let ppt: usize = stuff.positions.len() / THREADS;
+fn error(k: f32, stuff: &Stuff, num_threads: usize) -> f32 {
+    let ppt: usize = stuff.positions.len() / num_threads;
     let total_error: f32 = thread::scope(|s|
-        (0..THREADS).map(|i| s.spawn(move || stuff.error_of_slice(k, i, ppt)))
+        (0..num_threads).map(|i| s.spawn(move || stuff.error_of_slice(k, i, ppt)))
             .collect::<Vec<thread::ScopedJoinHandle<f32>>>().into_iter()
             .fold(0.0, |err, p| err + p.join().unwrap())
     );
@@ -88,6 +88,8 @@ fn error(k: f32, stuff: &Stuff) -> f32 {
 }
 
 fn main() {
+    let num_threads = thread::available_parallelism().unwrap().get()  - SPARE_THREADS;
+    println!("{} threads available, {} will be used", num_threads + SPARE_THREADS, num_threads);
     // LOADING POSITIONS
     let mut stuff: Stuff = Stuff {
         params: [[[100; 64], [300; 64], [300; 64], [500; 64], [900; 64], [0; 64]]; 2].concat().concat().try_into().unwrap(),
@@ -112,10 +114,10 @@ fn main() {
     // OPTIMISING K VALUE
     time = Instant::now();
     let mut k: f32 = INIT_K;
-    let mut best_error: f32 = error(k, &stuff);
-    let step: f32 = if error(k - STEP_K, &stuff) < error(k + STEP_K, &stuff) {-STEP_K} else {STEP_K};
+    let mut best_error: f32 = error(k, &stuff, num_threads);
+    let step: f32 = if error(k - STEP_K, &stuff, num_threads) < error(k + STEP_K, &stuff, num_threads) {-STEP_K} else {STEP_K};
     loop {
-        let new_error: f32 = error(k + step, &stuff);
+        let new_error: f32 = error(k + step, &stuff, num_threads);
         if new_error >= best_error {break}
         k += step;
         best_error = new_error;
@@ -132,13 +134,13 @@ fn main() {
         improved = false;
         for (i, dir) in improves.iter_mut().enumerate() {
             stuff.params[i] += *dir;
-            new_error = error(k, &stuff);
+            new_error = error(k, &stuff, num_threads);
             if new_error < best_error {
                 best_error = new_error;
                 improved = true;
             } else {
                 stuff.params[i] -= 2 * (*dir);
-                new_error = error(k, &stuff);
+                new_error = error(k, &stuff, num_threads);
                 if new_error < best_error {
                     best_error = new_error;
                     improved = true;
