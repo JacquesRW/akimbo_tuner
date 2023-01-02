@@ -1,11 +1,4 @@
-use std::{
-    cmp::min,
-    fs::File,
-    io::{stdin, BufRead, BufReader},
-    process::exit,
-    time::{Duration, Instant},
-    thread::{scope, sleep, Scope, ScopedJoinHandle}
-};
+use std::{cmp, fs::File, io::{stdin, BufRead, BufReader}, process, time::Instant, thread};
 
 const THREADS: usize = 4;
 const PIECE_CHARS: [char; 12] = ['P','N','B','R','Q','K','p','n','b','r','q','k'];
@@ -49,7 +42,7 @@ impl Position {
                 col += 1
             }
         }
-        phase = min(phase, TPHASE as i16);
+        phase = cmp::min(phase, TPHASE as i16);
         // parsing result
         let result: f32 = match commands[1] {
             "\"1-0\";" => 1.0,
@@ -86,9 +79,9 @@ impl Stuff {
 
 fn error(k: f32, stuff: &Stuff) -> f32 {
     let ppt: usize = stuff.positions.len() / THREADS;
-    let total_error: f32 = scope(|s: &Scope|
+    let total_error: f32 = thread::scope(|s|
         (0..THREADS).map(|i| s.spawn(move || stuff.error_of_slice(k, i, ppt)))
-            .collect::<Vec<ScopedJoinHandle<f32>>>().into_iter()
+            .collect::<Vec<thread::ScopedJoinHandle<f32>>>().into_iter()
             .fold(0.0, |err, p| err + p.join().unwrap())
     );
     total_error / stuff.num
@@ -105,8 +98,7 @@ fn main() {
     let mut n: usize = 0;
     let file: File = File::open("set.epd").unwrap_or_else(move |_| {
         println!("Couldn't load file!");
-        sleep(Duration::from_secs(5));
-        exit(1)
+        process::exit(1)
     });
     for line in BufReader::new(file).lines() {
         let pos: Position = Position::from_epd(&line.unwrap());
@@ -168,7 +160,7 @@ fn main() {
         stdin().read_line(&mut input).unwrap();
         let commands: Vec<&str> = input.split(' ').map(|v| v.trim()).collect();
         match commands[0] {
-            "quit" => exit(0),
+            "quit" => process::exit(0),
             _ => println!("Unknown command!"),
         }
     }
