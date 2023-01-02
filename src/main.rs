@@ -97,10 +97,7 @@ fn error(k: f32, stuff: &Stuff) -> f32 {
 fn main() {
     // LOADING POSITIONS
     let mut stuff: Stuff = Stuff {
-        params: [
-            [100; 64], [300; 64], [300; 64], [500; 64], [900; 64], [0; 64],
-            [100; 64], [300; 64], [300; 64], [500; 64], [900; 64], [0; 64],
-        ].concat().try_into().unwrap(),
+        params: [[[100; 64], [300; 64], [300; 64], [500; 64], [900; 64], [0; 64]]; 2].concat().concat().try_into().unwrap(),
         positions: Vec::new(),
         num: 0.0,
     };
