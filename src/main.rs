@@ -1,6 +1,14 @@
-use std::{fs::File, io::{BufRead, BufReader}, time::{Duration, Instant}, thread::{scope, Scope, ScopedJoinHandle}};
+use std::{
+    cmp::min,
+    fs::File,
+    io::{stdin, BufRead, BufReader},
+    process::exit,
+    time::{Duration, Instant},
+    thread::{scope, sleep, Scope, ScopedJoinHandle}
+};
 
 const THREADS: usize = 4;
+const PIECES: [char; 12] = ['P','N','B','R','Q','K','p','n','b','r','q','k'];
 const PHASE_VALS: [i16; 7] = [0, 1, 1, 2, 4, 0, 0];
 const TPHASE: i32 = 24;
 const INIT_K: f32 = 0.4;
@@ -26,26 +34,22 @@ impl Position {
         let mut phase: i16 = 0;
         let mut psts: [[usize; 16]; 2] = [[0; 16]; 2];
         let mut counters: [usize; 2] = [0, 0];
-        let mut idx: usize = 63;
-        let fen: &str = commands[0].split_whitespace().collect::<Vec<&str>>()[0];
-        let rows: Vec<&str> = fen.split('/').collect();
-        for row in rows {
-            for ch in row.chars().rev() {
-                if ch == '/' { continue }
-                if !ch.is_numeric() {
-                    let idx2: usize = ['P','N','B','R','Q','K','p','n','b','r','q','k'].iter().position(|&element| element == ch).unwrap_or(6);
-                    let (col, pc): (usize, usize) = ((idx2 > 5) as usize, idx2 - 6 * ((idx2 > 5) as usize));
-                    psts[col][counters[col]] = pc * 64 + (idx ^ (56 * (col == 0) as usize));
-                    counters[col] += 1;
-                    phase += PHASE_VALS[pc];
-                    idx -= (idx > 0) as usize;
-                } else {
-                    let len: usize = ch.to_string().parse::<usize>().unwrap_or(8);
-                    idx -= (idx >= len) as usize * len;
-                }
+        let fen: Vec<char> = commands[0].split_whitespace().collect::<Vec<&str>>()[0].chars().collect();
+        let (mut row, mut col): (i16, i16) = (7, 0);
+        for ch in fen {
+            if ch == '/' { row -= 1; col = 0; }
+            else if ('1'..='8').contains(&ch) { col += ch.to_string().parse::<i16>().unwrap_or(0) }
+            else {
+                let idx2: usize = PIECES.iter().position(|&element| element == ch).unwrap_or(6);
+                let c: usize = (idx2 > 5) as usize;
+                let pc: usize = idx2 - 6 * c;
+                psts[c][counters[c]] = pc * 64 + ((8 * row + col) as usize ^ (56 * (c == 0) as usize));
+                counters[c] += 1;
+                phase += PHASE_VALS[pc];
+                col += 1
             }
         }
-        phase = std::cmp::min(phase, TPHASE as i16);
+        phase = min(phase, TPHASE as i16);
         // parsing result
         let result: f32 = match commands[1] {
             "\"1-0\";" => 1.0,
@@ -73,16 +77,17 @@ impl Position {
 }
 
 impl Stuff {
-    fn slice_error(&self, k: f32, i: usize, ppt: usize) -> f32 {
-        self.positions[i*ppt..(i + 1)*ppt].iter()
-            .fold(0.0, |err, p| err + (p.result - 1.0 / (1.0 + 10f32.powf(-k * p.eval(&self.params) / 100.0))).powi(2))
+    fn error_of_slice(&self, k: f32, i: usize, ppt: usize) -> f32 {
+        self.positions[i*ppt..(i + 1)*ppt].iter().fold(0.0, |err, p|
+            err + (p.result - 1.0 / (1.0 + 10f32.powf(-k * p.eval(&self.params) / 100.0))).powi(2)
+        )
     }
 }
 
 fn error(k: f32, stuff: &Stuff) -> f32 {
     let ppt: usize = stuff.positions.len() / THREADS;
     let total_error: f32 = scope(|s: &Scope|
-        (0..THREADS).map(|i| s.spawn(move || stuff.slice_error(k, i, ppt)))
+        (0..THREADS).map(|i| s.spawn(move || stuff.error_of_slice(k, i, ppt)))
             .collect::<Vec<ScopedJoinHandle<f32>>>().into_iter()
             .fold(0.0, |err, p| err + p.join().unwrap())
     );
@@ -111,8 +116,8 @@ fn main() {
     let mut n: usize = 0;
     let file: File = File::open("set.epd").unwrap_or_else(move |_| {
         println!("Couldn't load file!");
-        std::thread::sleep(Duration::from_secs(5));
-        std::process::exit(1)
+        sleep(Duration::from_secs(5));
+        exit(1)
     });
     for line in BufReader::new(file).lines() {
         let pos: Position = Position::from_epd(&line.unwrap());
@@ -120,7 +125,7 @@ fn main() {
         stuff.positions.push(pos);
     }
     let elapsed: u128 = time.elapsed().as_millis();
-    println!("loaded {} positions in {} seconds ({}/sec)", n, elapsed as f32 / 1000.0, n * 1000 / elapsed as usize);
+    println!("loaded {n} positions in {} seconds ({}/sec)", elapsed as f32 / 1000.0, n * 1000 / elapsed as usize);
     stuff.num = n as f32;
 
     // OPTIMISING K VALUE
@@ -134,8 +139,7 @@ fn main() {
         k += step;
         best_error = new_error;
     }
-    println!("optimal k: {:.3}, error: {:.6}, time: {:.2}s", k, best_error, time.elapsed().as_millis() as f32 / 1000.0);
-    let k: f32 = k;
+    println!("optimal k: {k:.3}, error: {best_error:.6}, time: {:.2}s", time.elapsed().as_millis() as f32 / 1000.0);
 
     // TEXEL TUNING
     let mut improves: [i16; 768] = [1; 768];
@@ -163,7 +167,7 @@ fn main() {
                 }
             }
         }
-        println!("epoch {}: {:.2}s, error: {:.6}", count, time.elapsed().as_millis() as f32 / 1000.0, best_error);
+        println!("epoch {count}: {:.2}s, error: {best_error:.6}", time.elapsed().as_millis() as f32 / 1000.0);
         count += 1;
     }
     println!("Finished optimisation.");
@@ -172,10 +176,10 @@ fn main() {
     // WAIT FOR EXIT
     loop {
         let mut input: String = String::new();
-        std::io::stdin().read_line(&mut input).unwrap();
+        stdin().read_line(&mut input).unwrap();
         let commands: Vec<&str> = input.split(' ').map(|v| v.trim()).collect();
         match commands[0] {
-            "quit" => std::process::exit(0),
+            "quit" => exit(0),
             _ => println!("Unknown command!"),
         }
     }
