@@ -1,4 +1,4 @@
-use std::{cmp, fs::File, io::{stdin, BufRead, BufReader}, process, time::Instant, thread};
+use std::{cmp, fs::File, io::{self, BufRead}, process, time::Instant, thread};
 
 const SPARE_THREADS: usize = 0;
 const PIECE_CHARS: [char; 12] = ['P','N','B','R','Q','K','p','n','b','r','q','k'];
@@ -23,11 +23,8 @@ struct Stuff {
 impl Position {
     fn from_epd(s: &str) -> Self {
         let commands: Vec<&str> = s.split("c9").map(|v| v.trim()).collect();
-        // parsing fen
-        let mut phase: i16 = 0;
-        let mut psts: [[usize; 16]; 2] = [[0; 16]; 2];
-        let mut counters: [usize; 2] = [0, 0];
         let fen: Vec<char> = commands[0].split_whitespace().collect::<Vec<&str>>()[0].chars().collect();
+        let mut pos = Position {psts: [[0; 16]; 2], counters: [0; 2], phase: 0, result: 0.0};
         let (mut row, mut col): (i16, i16) = (7, 0);
         for ch in fen {
             if ch == '/' { row -= 1; col = 0; }
@@ -36,20 +33,15 @@ impl Position {
                 let idx2: usize = PIECE_CHARS.iter().position(|&element| element == ch).unwrap_or(6);
                 let c: usize = (idx2 > 5) as usize;
                 let pc: usize = idx2 - 6 * c;
-                psts[c][counters[c]] = pc * 64 + ((8 * row + col) as usize ^ (56 * (c == 0) as usize));
-                counters[c] += 1;
-                phase += PHASE_VALS[pc];
+                pos.psts[c][pos.counters[c]] = pc * 64 + ((8 * row + col) as usize ^ (56 * (c == 0) as usize));
+                pos.counters[c] += 1;
+                pos.phase += PHASE_VALS[pc];
                 col += 1
             }
         }
-        phase = cmp::min(phase, TPHASE as i16);
-        // parsing result
-        let result: f32 = match commands[1] {
-            "\"1-0\";" => 1.0,
-            "\"1/2-1/2\";" => 0.5,
-            _ => 0.0
-        };
-        Self {psts, counters, phase, result}
+        pos.phase = cmp::min(pos.phase, TPHASE as i16);
+        pos.result = match commands[1] {"\"1-0\";" => 1.0, "\"0-1\";" => 0.0, _ => 0.5};
+        pos
     }
 
     #[inline]
@@ -80,15 +72,19 @@ impl Stuff {
 fn error(k: f32, stuff: &Stuff, num_threads: usize) -> f32 {
     let ppt: usize = stuff.positions.len() / num_threads;
     let total_error: f32 = thread::scope(|s|
-        (0..num_threads).map(|i| s.spawn(move || stuff.error_of_slice(k, i, ppt)))
-            .collect::<Vec<thread::ScopedJoinHandle<f32>>>().into_iter()
+        (0..num_threads)
+            .map(|i| s.spawn(move || stuff.error_of_slice(k, i, ppt)))
+            .collect::<Vec<thread::ScopedJoinHandle<f32>>>()
+            .into_iter()
             .fold(0.0, |err, p| err + p.join().unwrap())
     );
     total_error / stuff.num
 }
 
+macro_rules! err {($s:expr) => {|_| {println!($s); process::exit(1);}}}
+
 fn main() {
-    let num_threads = thread::available_parallelism().unwrap().get()  - SPARE_THREADS;
+    let num_threads = thread::available_parallelism().unwrap_or_else(err!("error checking number of available threads")).get() - SPARE_THREADS;
     println!("{} threads available, {} will be used", num_threads + SPARE_THREADS, num_threads);
     // LOADING POSITIONS
     let mut stuff: Stuff = Stuff {
@@ -98,12 +94,9 @@ fn main() {
     };
     let mut time: Instant = Instant::now();
     let mut n: usize = 0;
-    let file: File = File::open("set.epd").unwrap_or_else(move |_| {
-        println!("Couldn't load file!");
-        process::exit(1)
-    });
-    for line in BufReader::new(file).lines() {
-        let pos: Position = Position::from_epd(&line.unwrap());
+    let file: File = File::open("set.epd").unwrap_or_else(err!("error loading file"));
+    for line in io::BufReader::new(file).lines() {
+        let pos: Position = Position::from_epd(&line.unwrap_or_else(err!("error reading line")));
         n += 1;
         stuff.positions.push(pos);
     }
@@ -159,11 +152,8 @@ fn main() {
     // WAIT FOR EXIT
     loop {
         let mut input: String = String::new();
-        stdin().read_line(&mut input).unwrap();
+        io::stdin().read_line(&mut input).unwrap_or_else(err!("error parsing input"));
         let commands: Vec<&str> = input.split(' ').map(|v| v.trim()).collect();
-        match commands[0] {
-            "quit" => process::exit(0),
-            _ => println!("Unknown command!"),
-        }
+        if commands[0] == "quit" {break}
     }
 }
