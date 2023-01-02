@@ -8,7 +8,7 @@ use std::{
 };
 
 const THREADS: usize = 4;
-const PIECES: [char; 12] = ['P','N','B','R','Q','K','p','n','b','r','q','k'];
+const PIECE_CHARS: [char; 12] = ['P','N','B','R','Q','K','p','n','b','r','q','k'];
 const PHASE_VALS: [i16; 7] = [0, 1, 1, 2, 4, 0, 0];
 const TPHASE: i32 = 24;
 const INIT_K: f32 = 0.4;
@@ -40,7 +40,7 @@ impl Position {
             if ch == '/' { row -= 1; col = 0; }
             else if ('1'..='8').contains(&ch) { col += ch.to_string().parse::<i16>().unwrap_or(0) }
             else {
-                let idx2: usize = PIECES.iter().position(|&element| element == ch).unwrap_or(6);
+                let idx2: usize = PIECE_CHARS.iter().position(|&element| element == ch).unwrap_or(6);
                 let c: usize = (idx2 > 5) as usize;
                 let pc: usize = idx2 - 6 * c;
                 psts[c][counters[c]] = pc * 64 + ((8 * row + col) as usize ^ (56 * (c == 0) as usize));
@@ -78,7 +78,7 @@ impl Position {
 
 impl Stuff {
     fn error_of_slice(&self, k: f32, i: usize, ppt: usize) -> f32 {
-        self.positions[i*ppt..(i + 1)*ppt].iter().fold(0.0, |err, p|
+        self.positions[i * ppt .. (i + 1) * ppt].iter().fold(0.0, |err, p|
             err + (p.result - 1.0 / (1.0 + 10f32.powf(-k * p.eval(&self.params) / 100.0))).powi(2)
         )
     }
@@ -92,14 +92,6 @@ fn error(k: f32, stuff: &Stuff) -> f32 {
             .fold(0.0, |err, p| err + p.join().unwrap())
     );
     total_error / stuff.num
-}
-
-fn print_psts(params: &[i16; 768]) {
-    const PIECES: [&str; 6] = ["pawn", "knight", "bishop", "rook", "queen", "king"];
-    const PHASE: [&str; 2] = ["mg", "eg"];
-    for i in 0..12 {
-        println!("{} {}: {:?}", PHASE[i / 6], PIECES[i % 6], &params[i * 64 .. (i + 1) * 64]);
-    }
 }
 
 fn main() {
@@ -170,8 +162,8 @@ fn main() {
         println!("epoch {count}: {:.2}s, error: {best_error:.6}", time.elapsed().as_millis() as f32 / 1000.0);
         count += 1;
     }
-    println!("Finished optimisation.");
-    print_psts(&stuff.params);
+    println!("Finished optimisation:");
+    for i in 0..12 {println!("{:?},", &stuff.params[i * 64 .. (i + 1) * 64])}
 
     // WAIT FOR EXIT
     loop {
