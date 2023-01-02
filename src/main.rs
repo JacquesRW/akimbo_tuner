@@ -2,7 +2,6 @@ use std::{
     cmp,
     fs::File,
     io::{stdin, BufRead, BufReader},
-    sync::atomic::{AtomicUsize, Ordering::Relaxed},
     thread::{available_parallelism, scope, ScopedJoinHandle},
     time::Instant,
 };
@@ -15,9 +14,6 @@ const INITIAL_PARAMS: [[[i16; 64]; 6]; 2] = [[
     [100; 64], [300; 64], [300; 64], [500; 64], [900; 64], [0; 64],
 ]; 2];
 
-static THREADS: AtomicUsize = AtomicUsize::new(0);
-static PPT: AtomicUsize = AtomicUsize::new(0);
-
 struct Position {
     psts: [[u16; 16]; 2],
     counters: [u16; 2],
@@ -26,9 +22,10 @@ struct Position {
 }
 
 struct Stuff {
-    params: [i16; NUM_PARAMS],
+    params: [i16; 768],
     positions: Vec<Position>,
     num: f32,
+    chunk_size: usize,
 }
 
 impl Position {
@@ -92,18 +89,11 @@ impl Position {
     }
 }
 
-impl Stuff {
-    fn error_of_slice(&self, k: f32, i: usize, ppt: usize) -> f32 {
-        self.positions[i * ppt..(i + 1) * ppt]
-            .iter()
-            .fold(0.0, |err, p| err + p.error(k, &self.params))
-    }
-}
-
 fn error(k: f32, stuff: &Stuff) -> f32 {
     let total: f32 = scope(|s| {
-        (0..THREADS.load(Relaxed))
-            .map(|i| s.spawn(move || stuff.error_of_slice(k, i, PPT.load(Relaxed))))
+        stuff.positions
+            .chunks(stuff.chunk_size)
+            .map(|chunk| s.spawn(move || chunk.iter().fold(0.0, |err, p| err + p.error(k, &stuff.params))))
             .collect::<Vec<ScopedJoinHandle<f32>>>()
             .into_iter()
             .fold(0.0, |err, p| err + p.join().unwrap_or(0.0))
@@ -116,11 +106,11 @@ fn elapsed(time: &Instant) -> f32 {
 }
 
 fn main() {
-    THREADS.store(available_parallelism().expect("available").get(), Relaxed);
-    println!("{} threads available", THREADS.load(Relaxed));
+    let threads = available_parallelism().expect("available").get();
+    println!("{threads} threads available");
 
     // LOADING POSITIONS
-    let mut stuff: Stuff = Stuff {
+    let mut stuff = Stuff {
         params: INITIAL_PARAMS
             .concat()
             .concat()
@@ -128,6 +118,7 @@ fn main() {
             .expect("hard coded"),
         positions: Vec::new(),
         num: 0.0,
+        chunk_size: 0,
     };
     let mut time: Instant = Instant::now();
     let file: File = File::open("set.epd").expect("should have provided correct file");
@@ -135,7 +126,7 @@ fn main() {
         stuff.positions.push(Position::from_epd(&ln.unwrap()));
         err + 1
     }) as f32;
-    PPT.store(stuff.positions.len() / THREADS.load(Relaxed), Relaxed);
+    stuff.chunk_size = stuff.positions.len() / threads;
     println!(
         "loaded {} positions in {} seconds",
         stuff.num as u64,
@@ -143,6 +134,7 @@ fn main() {
     );
 
     // OPTIMISING K VALUE
+    time = Instant::now();
     let step: f32 = (error(INIT - STEP, &stuff) - error(INIT + STEP, &stuff)).signum() * STEP;
     let mut k: f32 = INIT;
     let (mut best, mut new): (f32, f32) = (error(k, &stuff), error(k + step, &stuff));
@@ -151,6 +143,7 @@ fn main() {
         best = new;
         new = error(k + step, &stuff);
     }
+    println!("k: {k:.3} in {}s", elapsed(&time));
 
     // TEXEL TUNING
     let mut cache: [i16; NUM_PARAMS] = [1; NUM_PARAMS];
@@ -181,6 +174,5 @@ fn main() {
     (0..12).for_each(|i| println!("{:?},", &stuff.params[i * 64..(i + 1) * 64]));
 
     // WAIT FOR EXIT
-    let mut input: String = String::new();
-    stdin().read_line(&mut input).expect("parsable");
+    stdin().read_line(&mut String::new()).expect("parsable");
 }
