@@ -23,7 +23,7 @@ struct Stuff {
 impl Position {
     fn from_epd(s: &str) -> Self {
         let commands: Vec<&str> = s.split("c9").map(|v| v.trim()).collect();
-        let fen: Vec<char> = commands[0].split_whitespace().collect::<Vec<&str>>()[0].chars().collect();
+        let fen: Vec<char> = commands[0].split_whitespace().next().expect("should be non-empty").chars().collect();
         let mut pos = Position {psts: [[0; 16]; 2], counters: [0; 2], phase: 0, result: 0.0};
         let (mut row, mut col): (i16, i16) = (7, 0);
         for ch in fen {
