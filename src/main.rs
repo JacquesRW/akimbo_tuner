@@ -33,8 +33,10 @@ struct Stuff {
 
 impl Position {
     fn from_epd(s: &str) -> Self {
-        let commands: Vec<&str> = s.split("c9").map(|v| v.trim()).collect();
-        let fen: &str = commands[0]
+        let mut commands = s.split("c9").map(str::trim);
+        let fen: &str = commands
+            .next()
+            .expect("at least one")
             .split_whitespace()
             .next()
             .expect("should be non-empty");
@@ -42,7 +44,7 @@ impl Position {
             psts: [[0; 16]; 2],
             counters: [0; 2],
             phase: 0,
-            result: match commands[1] {
+            result: match commands.next().expect("two parts") {
                 "\"1-0\";" => 1.0,
                 "\"0-1\";" => 0.0,
                 _ => 0.5,
@@ -56,17 +58,16 @@ impl Position {
             } else if ('1'..='8').contains(&ch) {
                 col += ch.to_digit(10).expect("hard coded") as u16;
             } else {
-                let idx: u16 = ['P', 'N', 'B', 'R', 'Q', 'K', 'p', 'n', 'b', 'r', 'q', 'k']
+                let idx: usize = ['P', 'N', 'B', 'R', 'Q', 'K', 'p', 'n', 'b', 'r', 'q', 'k']
                     .iter()
                     .position(|&element| element == ch)
-                    .expect("fen strings should be properly formatted")
-                    as u16;
-                let c: usize = (idx > 5) as usize;
-                let (pc, sq): (u16, u16) = (idx - 6 * c as u16, 8 * row + col);
+                    .expect("fen strings should be properly formatted");
+                let c: usize = idx / 6;
+                let (pc, sq): (u16, u16) = (idx as u16 - 6 * c as u16, 8 * row + col);
                 pos.psts[c][pos.counters[c] as usize] = pc * 64 + (sq ^ (56 * (c as u16 ^ 1)));
                 pos.counters[c] += 1;
                 pos.phase += [0, 1, 1, 2, 4, 0, 0][pc as usize];
-                col += 1
+                col += 1;
             }
         }
         pos.phase = cmp::min(pos.phase, TPHASE as i16);
@@ -175,7 +176,7 @@ fn main() {
                 }
             }
         }
-        println!("epoch time {:.2}s error {best:.6}", elapsed(&time))
+        println!("epoch time {:.2}s error {best:.6}", elapsed(&time));
     }
     (0..12).for_each(|i| println!("{:?},", &stuff.params[i * 64..(i + 1) * 64]));
 
