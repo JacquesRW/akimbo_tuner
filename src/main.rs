@@ -89,7 +89,7 @@ fn error(k: f32, data: &Data) -> f32 {
     let total: f32 = scope(|s| {
         data.positions
             .chunks(data.chunk_size)
-            .map(|chunk| s.spawn(move || chunk.iter().fold(0.0, |err, p| err + p.err(k, params))))
+            .map(|chunk| s.spawn(|| chunk.iter().fold(0.0, |err, p| err + p.err(k, params))))
             .collect::<Vec<ScopedJoinHandle<f32>>>()
             .into_iter()
             .fold(0.0, |err, p| err + p.join().unwrap_or(0.0))
