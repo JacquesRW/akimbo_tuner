@@ -1,8 +1,9 @@
-use std::{cmp, fs::File, io::{self, BufRead}, process, time::Instant, thread};
+use std::{cmp, fs::File, io::{self, BufRead}, time::Instant, thread::{self, ScopedJoinHandle}};
 
 const PIECE_CHARS: [char; 12] = ['P','N','B','R','Q','K','p','n','b','r','q','k'];
 const PHASE_VALS: [i16; 7] = [0, 1, 1, 2, 4, 0, 0];
 const TPHASE: i32 = 24;
+const NUM_PARAMS: usize = 768;
 const INIT: f32 = 0.4;
 const STEP: f32 = 0.001;
 
@@ -14,7 +15,7 @@ struct Position {
 }
 
 struct Stuff {
-    params: [i16; 768],
+    params: [i16; NUM_PARAMS],
     positions: Vec<Position>,
     num: f32,
 }
@@ -26,10 +27,15 @@ impl Position {
         let mut pos = Position {psts: [[0; 16]; 2], counters: [0; 2], phase: 0, result: 0.0};
         let (mut row, mut col): (i16, i16) = (7, 0);
         for ch in fen {
-            if ch == '/' { row -= 1; col = 0; }
-            else if ('1'..='8').contains(&ch) { col += ch.to_string().parse::<i16>().unwrap_or(0) }
-            else {
-                let idx: usize = PIECE_CHARS.iter().position(|&element| element == ch).unwrap_or(6);
+            if ch == '/' {
+                row -= 1;
+                col = 0;
+            } else if ('1'..='8').contains(&ch) {
+                col += ch.to_string().parse::<i16>().expect("hard coded range should be correct")
+            } else {
+                let idx: usize = PIECE_CHARS.iter()
+                    .position(|&element| element == ch)
+                    .expect("fen strings should be properly formatted");
                 let c: usize = (idx > 5) as usize;
                 let pc: usize = idx - 6 * c;
                 let sq: usize = (8 * row + col) as usize;
@@ -45,7 +51,7 @@ impl Position {
     }
 
     #[inline]
-    fn eval(&self, params: &[i16; 768]) -> f32 {
+    fn eval(&self, params: &[i16; NUM_PARAMS]) -> f32 {
         let p: i32 = self.phase as i32;
         let mut mg: i16 = 0;
         let mut eg: i16 = 0;
@@ -69,44 +75,41 @@ impl Stuff {
     }
 }
 
-fn error(k: f32, stuff: &Stuff, num_threads: usize) -> f32 {
-    let ppt: usize = stuff.positions.len() / num_threads;
+fn error(k: f32, stuff: &Stuff, threads: usize) -> f32 {
+    let ppt: usize = stuff.positions.len() / threads;
     let total_error: f32 = thread::scope(|s|
-        (0..num_threads)
+        (0..threads)
             .map(|i| s.spawn(move || stuff.error_of_slice(k, i, ppt)))
-            .collect::<Vec<thread::ScopedJoinHandle<f32>>>()
+            .collect::<Vec<ScopedJoinHandle<f32>>>()
             .into_iter()
-            .fold(0.0, |err, p| err + p.join().unwrap())
+            .fold(0.0, |err, p| err + p.join().unwrap_or(0.0))
     );
     total_error / stuff.num
 }
 
-macro_rules! err {($s:expr) => {|_| {println!($s); process::exit(1);}}}
 macro_rules! elapsed {($time:expr) => {$time.elapsed().as_millis() as f32 / 1000.0}}
 
 fn main() {
     let threads = thread::available_parallelism()
-        .unwrap_or_else(err!("error checking threads")).get();
+        .expect("should be using appropriate hardware")
+        .get();
     println!("{threads} threads available");
+
     // LOADING POSITIONS
     let mut stuff: Stuff = Stuff {
         params: [[[100; 64], [300; 64], [300; 64], [500; 64], [900; 64], [0; 64]]; 2]
-            .concat().concat().try_into().unwrap(),
+            .concat().concat().try_into().expect("hard coded params should be correct"),
         positions: Vec::new(),
         num: 0.0,
     };
     let mut time: Instant = Instant::now();
-    let mut n: usize = 0;
-    let file: File = File::open("set.epd").unwrap_or_else(err!("error loading file"));
-    for line in io::BufReader::new(file).lines() {
-        let pos: Position = Position::from_epd(&line
-            .unwrap_or_else(err!("error reading line")));
-        n += 1;
-        stuff.positions.push(pos);
-    }
-    stuff.num = n as f32;
+    let file: File = File::open("set.epd").expect("should have provided correct file");
+    stuff.num = io::BufReader::new(file).lines().into_iter().fold(0, |err, line| {
+        stuff.positions.push(Position::from_epd(&line.expect("file should be properly formatted")));
+        err + 1
+    }) as f32;
     let elapsed: f32 = elapsed!(time);
-    println!("loaded {n} positions in {elapsed} seconds ({}/sec)", stuff.num / elapsed);
+    println!("loaded {} positions in {elapsed} seconds ({}/sec)", stuff.num as u64, stuff.num / elapsed);
 
     // OPTIMISING K VALUE
     time = Instant::now();
@@ -123,7 +126,7 @@ fn main() {
     println!("optimal k: {k:.3}, error: {best_error:.6}, time: {:.2}s", elapsed!(time));
 
     // TEXEL TUNING
-    let mut improves: [i16; 768] = [1; 768];
+    let mut improves: [i16; NUM_PARAMS] = [1; NUM_PARAMS];
     let mut improved: bool = true;
     let mut count: i32 = 1;
     while improved {
@@ -156,7 +159,7 @@ fn main() {
     // WAIT FOR EXIT
     loop {
         let mut input: String = String::new();
-        io::stdin().read_line(&mut input).unwrap_or_else(err!("error parsing input"));
+        io::stdin().read_line(&mut input).expect("should be parsable");
         let commands: Vec<&str> = input.split(' ').map(|v| v.trim()).collect();
         if commands[0] == "quit" {break}
     }
