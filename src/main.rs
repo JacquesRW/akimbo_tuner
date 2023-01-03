@@ -27,7 +27,7 @@ struct Data {
     params: [i16; 768],
     positions: Vec<Position>,
     num: f32,
-    chunk_size: usize,
+    size: usize,
 }
 
 impl Position {
@@ -80,20 +80,21 @@ impl Position {
     }
 }
 
-fn error(k: f32, data: &Data) -> f32 {
+fn error(k: f32, Data {params, positions, num, size}: &Data) -> f32 {
     let total: f32 = scope(|s| {
-        data.positions
-            .chunks(data.chunk_size)
-            .map(|ch| s.spawn(|| ch.iter().fold(0.0, |err, p| err + p.err(k, &data.params))))
+        positions
+            .chunks(*size)
+            .map(|ch| s.spawn(|| ch.iter().map(|p| p.err(k, params)).sum()))
             .collect::<Vec<ScopedJoinHandle<f32>>>()
             .into_iter()
-            .fold(0.0, |err, p| err + p.join().unwrap_or(0.0))
+            .map(|p| p.join().unwrap_or_default())
+            .sum()
     });
-    total / data.num
+    total / num
 }
 
 fn dur(time: &Instant) -> f32 {
-    time.elapsed().as_millis() as f32 / 1000.0
+    time.elapsed().as_secs_f32()
 }
 
 fn main() {
@@ -102,15 +103,15 @@ fn main() {
         params: [INIT; 2].concat().concat().try_into().expect("hard coded"),
         positions: Vec::with_capacity(1_450_404),
         num: 0.0,
-        chunk_size: 0,
+        size: 0,
     };
     let mut time: Instant = Instant::now();
     let file: File = File::open("set.epd").expect("should have provided correct file");
-    data.num = BufReader::new(file).lines().into_iter().fold(0, |err, ln| {
+    data.num = BufReader::new(file).lines().into_iter().fold(0.0, |err, ln| {
         data.positions.push(Position::from_epd(&ln.unwrap()));
-        err + 1
-    }) as f32;
-    data.chunk_size = data.positions.len() / available_parallelism().expect("available").get();
+        err + 1.0
+    });
+    data.size = data.positions.len() / available_parallelism().expect("available").get();
     println!("positions {:.0} ({}/sec)", data.num, data.num / dur(&time));
 
     // OPTIMISING K VALUE
@@ -123,7 +124,7 @@ fn main() {
         best = new;
         new = error(k + step, &data);
     }
-    println!("time {}s error {best:.6} optimal k = {k:.3}", dur(&time));
+    println!("time {:.3}s error {best:.6} optimal k = {k:.3}", dur(&time));
 
     // TEXEL TUNING
     let mut cache: [i16; NUM_PARAMS] = [1; NUM_PARAMS];
@@ -149,7 +150,7 @@ fn main() {
                 }
             }
         }
-        println!("time {}s error {best:.6}", dur(&time));
+        println!("time {:.3}s error {best:.6}", dur(&time));
     }
     (0..12).for_each(|i| println!("{:?},", &data.params[i * 64..(i + 1) * 64]));
 
