@@ -15,6 +15,7 @@ const INIT: [[i16; 64]; 6] = [
     [100; 64], [300; 64], [300; 64], [500; 64], [900; 64], [0; 64],
 ];
 
+#[derive(Default)]
 struct Position {
     psts: [[u16; 16]; 2],
     counters: [u16; 2],
@@ -31,12 +32,7 @@ struct Data {
 
 impl Position {
     fn from_epd(epd: &str) -> Self {
-        let mut pos = Position {
-            psts: [[0; 16]; 2],
-            counters: [0; 2],
-            phase: 0,
-            result: 0.0,
-        };
+        let mut pos = Position::default();
         let (mut row, mut col): (u16, u16) = (7, 0);
         let mut divide: usize = 0;
         for (i, ch) in epd.chars().enumerate() {
@@ -85,11 +81,10 @@ impl Position {
 }
 
 fn error(k: f32, data: &Data) -> f32 {
-    let params = &data.params;
     let total: f32 = scope(|s| {
         data.positions
             .chunks(data.chunk_size)
-            .map(|chunk| s.spawn(|| chunk.iter().fold(0.0, |err, p| err + p.err(k, params))))
+            .map(|ch| s.spawn(|| ch.iter().fold(0.0, |err, p| err + p.err(k, &data.params))))
             .collect::<Vec<ScopedJoinHandle<f32>>>()
             .into_iter()
             .fold(0.0, |err, p| err + p.join().unwrap_or(0.0))
@@ -105,7 +100,7 @@ fn main() {
     // LOADING POSITIONS
     let mut data = Data {
         params: [INIT; 2].concat().concat().try_into().expect("hard coded"),
-        positions: Vec::new(),
+        positions: Vec::with_capacity(1_450_404),
         num: 0.0,
         chunk_size: 0,
     };
