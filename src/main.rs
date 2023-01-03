@@ -34,8 +34,7 @@ impl Position {
     fn from_epd(epd: &str) -> Self {
         let mut pos = Position::default();
         let (mut row, mut col): (u16, u16) = (7, 0);
-        let mut divide: usize = 0;
-        for (i, ch) in epd.chars().enumerate() {
+        for ch in epd.chars() {
             if ch == '/' {
                 row -= 1;
                 col = 0;
@@ -49,14 +48,13 @@ impl Position {
                 pos.phase += [0, 1, 1, 2, 4, 0, 0][pc as usize];
                 col += 1;
             } else if ch == ' ' {
-                divide = i;
                 break;
             }
         }
         pos.phase = cmp::min(pos.phase, TPHASE as i16);
-        pos.result = match epd[divide..].split_whitespace().last() {
-            Some("\"1-0\";") => 1.0,
-            Some("\"0-1\";") => 0.0,
+        pos.result = match &epd[(epd.len() - 6)..] {
+            "\"1-0\";" => 1.0,
+            "\"0-1\";" => 0.0,
             _ => 0.5,
         };
         pos
@@ -80,17 +78,17 @@ impl Position {
     }
 }
 
-fn error(k: f32, Data {params, positions, num, size}: &Data) -> f32 {
+fn error(k: f32, data: &Data) -> f32 {
     let total: f32 = scope(|s| {
-        positions
-            .chunks(*size)
-            .map(|ch| s.spawn(|| ch.iter().map(|p| p.err(k, params)).sum()))
+        data.positions
+            .chunks(data.size)
+            .map(|chunk| s.spawn(|| chunk.iter().map(|pos| pos.err(k, &data.params)).sum()))
             .collect::<Vec<ScopedJoinHandle<f32>>>()
             .into_iter()
             .map(|p| p.join().unwrap_or_default())
             .sum()
     });
-    total / num
+    total / data.num
 }
 
 fn dur(time: &Instant) -> f32 {
