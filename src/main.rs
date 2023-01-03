@@ -105,9 +105,9 @@ fn main() {
     };
     let mut time: Instant = Instant::now();
     let file: File = File::open("set.epd").expect("should have provided correct file");
-    data.num = BufReader::new(file).lines().into_iter().fold(0.0, |err, ln| {
+    BufReader::new(file).lines().into_iter().for_each(|ln| {
         data.positions.push(Position::from_epd(&ln.unwrap()));
-        err + 1.0
+        data.num += 1.0;
     });
     data.size = data.positions.len() / available_parallelism().expect("available").get();
     println!("positions {:.0} ({}/sec)", data.num, data.num / dur(&time));
