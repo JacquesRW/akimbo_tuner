@@ -63,28 +63,20 @@ impl Position {
         let mut pos = Position::default();
         let (mut row, mut col): (u16, u16) = (7, 0);
         for ch in epd.chars() {
-            if ch == '/' {
-                row -= 1;
-                col = 0;
-            } else if ('1'..='8').contains(&ch) {
-                col += ch.to_digit(10).expect("hard coded") as u16;
-            } else if let Some(idx) = CHARS.iter().position(|&element| element == ch) {
+            if ch == '/' {row -= 1; col = 0;}
+            else if ch == ' ' {break}
+            else if ('1'..='8').contains(&ch) {col += ch.to_digit(10).expect("hard coded") as u16}
+            else if let Some(idx) = CHARS.iter().position(|&element| element == ch) {
                 let c: usize = idx / 6;
                 let (pc, sq): (u16, u16) = (idx as u16 - 6 * c as u16, 8 * row + col);
                 pos.psts[c][pos.counters[c] as usize] = pc * 64 + (sq ^ (56 * (c as u16 ^ 1)));
                 pos.counters[c] += 1;
                 pos.phase += [0, 1, 1, 2, 4, 0, 0][pc as usize];
                 col += 1;
-            } else if ch == ' ' {
-                break;
             }
         }
         pos.phase = cmp::min(pos.phase, TPHASE as i16);
-        pos.result = match &epd[(epd.len() - 6)..] {
-            "\"1-0\";" => 1.0,
-            "\"0-1\";" => 0.0,
-            _ => 0.5,
-        };
+        pos.result = match &epd[(epd.len() - 6)..] {"\"1-0\";" => 1.0, "\"0-1\";" => 0.0, _ => 0.5};
         pos
     }
 
@@ -104,16 +96,11 @@ fn error(k: f32, data: &Data) -> f32 {
         data.positions
             .chunks(data.size)
             .map(|chunk| s.spawn(|| chunk.iter().map(|pos| pos.err(k, &data.params)).sum()))
-            .collect::<Vec<ScopedJoinHandle<f32>>>()
-            .into_iter()
+            .collect::<Vec<ScopedJoinHandle<f32>>>().into_iter()
             .map(|p| p.join().unwrap_or_default())
             .sum()
     });
     total / data.num
-}
-
-fn dur(time: &Instant) -> f32 {
-    time.elapsed().as_secs_f32()
 }
 
 fn main() {
@@ -131,19 +118,18 @@ fn main() {
         data.num += 1.0;
     });
     data.size = data.positions.len() / available_parallelism().expect("available").get();
-    println!("positions {:.0} ({}/sec)", data.num, data.num / dur(&time));
+    println!("positions {:.0} ({}/sec)", data.num, data.num / time.elapsed().as_secs_f32());
 
     // OPTIMISING K VALUE
     time = Instant::now();
     let step: f32 = (error(K - STEP, &data) - error(K + STEP, &data)).signum() * STEP;
-    let mut k: f32 = K;
-    let (mut best, mut new): (f32, f32) = (error(k, &data), error(k + step, &data));
+    let (mut k, mut best, mut new): (f32, f32, f32) = (K, error(K, &data), error(K + step, &data));
     while new <= best {
         k += step;
         best = new;
         new = error(k + step, &data);
     }
-    println!("time {:.3}s error {best:.6} optimal k = {k:.3}", dur(&time));
+    println!("time {:.3}s error {best:.6} optimal k = {k:.3}", time.elapsed().as_secs_f32());
 
     // TEXEL TUNING
     let mut cache: [S; NUM_PARAMS] = [S(1, 1); NUM_PARAMS];
@@ -151,27 +137,27 @@ fn main() {
     while improved {
         time = Instant::now();
         improved = false;
-        for (i, dir) in cache.iter_mut().enumerate() {
-            for j in [false, true] {
+        for (i, dir) in cache.iter_mut().enumerate() { // iterate over all params
+            for j in [false, true] { // iterate over midgame and endgame parts
                 data.params[i][j] += dir[j];
                 new = error(k, &data);
-                if new < best {
+                if new < best { // cached direction lead to an improvement
                     best = new;
                     improved = true;
                 } else {
                     data.params[i][j] -= 2 * dir[j];
                     new = error(k, &data);
-                    if new < best {
+                    if new < best { // opposite of cached direction led to an improvement
                         best = new;
                         improved = true;
                         dir[j] = -dir[j];
-                    } else {
+                    } else { // no improvement
                         data.params[i][j] += dir[j];
                     }
                 }
             }
         }
-        println!("time {:.3}s error {best:.6}", dur(&time));
+        println!("time {:.3}s error {best:.6}", time.elapsed().as_secs_f32());
     }
     (0..12).for_each(|i| println!("{:?},", &data.params[i * 64..(i + 1) * 64]));
 
