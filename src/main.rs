@@ -2,18 +2,20 @@ use std::{
     cmp,
     fs::File,
     io::{stdin, BufRead, BufReader},
+    ops::{AddAssign, Index, IndexMut, SubAssign},
     thread::{available_parallelism, scope, ScopedJoinHandle},
     time::Instant,
 };
 
 const CHARS: [char; 12] = ['P', 'N', 'B', 'R', 'Q', 'K', 'p', 'n', 'b', 'r', 'q', 'k'];
 const TPHASE: i32 = 24;
-const NUM_PARAMS: usize = 768;
+const NUM_PARAMS: usize = 384;
 const K: f32 = 0.4;
 const STEP: f32 = 0.001;
-const INIT: [[i16; 64]; 6] = [
-    [100; 64], [300; 64], [300; 64], [500; 64], [900; 64], [0; 64],
-];
+const INIT: [[S; 64]; 6] = [[S(100, 100); 64], [S(300, 300); 64], [S(300, 300); 64], [S(500, 500); 64], [S(900, 900); 64], [S(0, 0); 64]];
+
+#[derive(Clone, Copy, Debug)]
+struct S(i16, i16);
 
 #[derive(Default)]
 struct Position {
@@ -24,10 +26,36 @@ struct Position {
 }
 
 struct Data {
-    params: [i16; 768],
+    params: [S; NUM_PARAMS],
     positions: Vec<Position>,
     num: f32,
     size: usize,
+}
+
+impl AddAssign<S> for S {
+    fn add_assign(&mut self, rhs: S) {
+        self.0 += rhs.0;
+        self.1 += rhs.1;
+    }
+}
+
+impl SubAssign<S> for S {
+    fn sub_assign(&mut self, rhs: S) {
+        self.0 -= rhs.0;
+        self.1 -= rhs.1;
+    }
+}
+
+impl Index<bool> for S {
+    type Output = i16;
+    fn index(&self, index: bool) -> &Self::Output {
+        if index {&self.1} else {&self.0}}
+}
+
+impl IndexMut<bool> for S {
+    fn index_mut(&mut self, index: bool) -> &mut Self::Output {
+        if index {&mut self.1} else {&mut self.0}
+    }
 }
 
 impl Position {
@@ -61,19 +89,12 @@ impl Position {
     }
 
     #[inline]
-    fn err(&self, k: f32, params: &[i16; NUM_PARAMS]) -> f32 {
+    fn err(&self, k: f32, params: &[S; NUM_PARAMS]) -> f32 {
         let p: i32 = self.phase as i32;
-        let mut mg: i16 = 0;
-        let mut eg: i16 = 0;
-        for i in 0..self.counters[0] as usize {
-            mg += params[self.psts[0][i] as usize];
-            eg += params[self.psts[0][i] as usize + 384];
-        }
-        for i in 0..self.counters[1] as usize {
-            mg -= params[self.psts[1][i] as usize];
-            eg -= params[self.psts[1][i] as usize + 384];
-        }
-        let eval = ((p * mg as i32 + (TPHASE - p) * eg as i32) / TPHASE) as f32;
+        let mut score = S(0, 0);
+        (0..usize::from(self.counters[0])).for_each(|i| score += params[self.psts[0][i] as usize]);
+        (0..usize::from(self.counters[1])).for_each(|i| score -= params[self.psts[1][i] as usize]);
+        let eval = ((p * score.0 as i32 + (TPHASE - p) * score.1 as i32) / TPHASE) as f32;
         (self.result - 1.0 / (1.0 + 10f32.powf(-k * eval / 100.0))).powi(2)
     }
 }
@@ -98,7 +119,7 @@ fn dur(time: &Instant) -> f32 {
 fn main() {
     // LOADING POSITIONS
     let mut data = Data {
-        params: [INIT; 2].concat().concat().try_into().expect("hard coded"),
+        params: INIT.concat().try_into().expect("hard coded"),
         positions: Vec::with_capacity(1_450_404),
         num: 0.0,
         size: 0,
@@ -125,26 +146,28 @@ fn main() {
     println!("time {:.3}s error {best:.6} optimal k = {k:.3}", dur(&time));
 
     // TEXEL TUNING
-    let mut cache: [i16; NUM_PARAMS] = [1; NUM_PARAMS];
+    let mut cache: [S; NUM_PARAMS] = [S(1, 1); NUM_PARAMS];
     let mut improved: bool = true;
     while improved {
         time = Instant::now();
         improved = false;
         for (i, dir) in cache.iter_mut().enumerate() {
-            data.params[i] += *dir;
-            new = error(k, &data);
-            if new < best {
-                best = new;
-                improved = true;
-            } else {
-                data.params[i] -= 2 * (*dir);
+            for j in [false, true] {
+                data.params[i][j] += dir[j];
                 new = error(k, &data);
                 if new < best {
                     best = new;
                     improved = true;
-                    *dir = -(*dir);
                 } else {
-                    data.params[i] += *dir;
+                    data.params[i][j] -= 2 * dir[j];
+                    new = error(k, &data);
+                    if new < best {
+                        best = new;
+                        improved = true;
+                        dir[j] = -dir[j];
+                    } else {
+                        data.params[i][j] += dir[j];
+                    }
                 }
             }
         }
