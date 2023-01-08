@@ -1,8 +1,10 @@
+mod consts;
 mod score;
+mod eval;
 mod position;
 
-use position::Position;
 use score::S;
+use position::Position;
 use std::{
     fs::File,
     io::{stdin, BufRead, BufReader},
@@ -10,8 +12,7 @@ use std::{
     time::Instant,
 };
 
-pub const TPHASE: i32 = 24;
-pub const NUM_PARAMS: usize = 5;
+pub const NUM_PARAMS: usize = 17;
 const K: f32 = 0.4;
 const STEP: f32 = 0.001;
 
@@ -51,6 +52,7 @@ fn main() {
     });
     data.size = data.positions.len() / available_parallelism().expect("available").get();
     println!("positions {:.0} ({}/sec)", data.num, data.num / time.elapsed().as_secs_f32());
+    println!("{:?}", data.positions[0]);
 
     // OPTIMISING K VALUE
     time = Instant::now();
@@ -91,7 +93,7 @@ fn main() {
         }
         println!("time {:.3}s error {best:.6}", time.elapsed().as_secs_f32());
     }
-    println!("{:?},", &data.params);
+    println!("{:#?},", &data.params);
 
     // WAIT FOR EXIT
     stdin().read_line(&mut String::new()).expect("parsable");

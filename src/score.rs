@@ -1,4 +1,4 @@
-use crate::{TPHASE, NUM_PARAMS};
+use crate::{consts::TPHASE, NUM_PARAMS};
 use std::ops::{AddAssign, Mul, Index, IndexMut};
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -39,6 +39,18 @@ impl S {
         Self(330, 290),
         Self(450, 500),
         Self(950, 900),
+        Self(0, 0),
+        Self(0, 0),
+        Self(0, 0),
+        Self(0, 0),
+        Self(0, 0),
+        Self(0, 0),
+        Self(0, 0),
+        Self(0, 0),
+        Self(0, 0),
+        Self(0, 0),
+        Self(0, 0),
+        Self(0, 0),
     ];
 
     #[inline]
