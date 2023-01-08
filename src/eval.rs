@@ -1,6 +1,6 @@
 use crate::{consts::*, position::Position};
 
-pub const NUM_PARAMS: usize = 21;
+pub const NUM_PARAMS: usize = 27;
 
 macro_rules! pop_lsb {($idx:expr, $x:expr) => {$idx = $x.trailing_zeros() as u8; $x &= $x - 1}}
 macro_rules! count {($bb:expr) => {$bb.count_ones() as i16}}
@@ -100,4 +100,9 @@ pub fn set_pos_vals(pos: &mut Position, bitboards: [[u64; 6]; 2], sides: [u64; 2
     pos.vals[PAWN_SUPPORTS] = count!(sides[WHITE] & wp_att) - count!(sides[BLACK] & bp_att);
     pos.vals[PAWN_THREATS] = count!(sides[BLACK] & wp_att) - count!(sides[WHITE] & bp_att);
     pos.vals[PAWN_SHIELD] = count!(wp & wking_sqs) - count!(bp & bking_sqs);
+
+    // pawn progression
+    for i in 0..6 {
+        pos.vals[21 + i] = count!(wp & PAWN_RANKS[i]) - count!(bp & PAWN_RANKS[5 - i]);
+    }
 }

@@ -95,7 +95,7 @@ fn main() {
         println!("time {:.3}s error {best:.6}", time.elapsed().as_secs_f32());
     }
     // outputting parameters
-    println!("pub const MATERIAL: [S; 7] = {:?}, S(0, 0), S(0, 0)];", &data.params[0..5]);
+    println!("pub const MATERIAL: [S; 7] = {:?}, S(0, 0), S(0, 0)];", &data.params[PAWN..=QUEEN]);
     println!("pub const THREATS: [S; 4] = {:?};", &data.params[5..9]);
     println!("pub const SUPPORTS: [S; 4] = {:?};", &data.params[9..13]);
     println!("pub const CONTROLS: [S; 4] = {:?};", &data.params[13..17]);
@@ -103,6 +103,7 @@ fn main() {
     println!("pub const PAWN_SUPPORTS: S = {:?};", &data.params[PAWN_SUPPORTS]);
     println!("pub const PAWN_THREATS: S = {:?};", &data.params[PAWN_THREATS]);
     println!("pub const PAWN_SHIELD: S = {:?};", &data.params[PAWN_SHIELD]);
+    println!("pub const PAWN_PROGRESSION: [S; 6] = {:?};", &data.params[21..27]);
 
     // WAIT FOR EXIT
     stdin().read_line(&mut String::new()).expect("parsable");

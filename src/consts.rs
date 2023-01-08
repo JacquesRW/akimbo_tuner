@@ -27,6 +27,10 @@ pub const DIAGS: [u64; 15] = [
     0x0000008040201008, 0x0000000080402010, 0x0000000000804020, 0x0000000000008040, 0x0000000000000080,
 ];
 
+// ranks
+const RANK_1: u64 = 0xFF;
+pub const PAWN_RANKS: [u64; 6] = [RANK_1 << 8, RANK_1 << 16, RANK_1 << 24, RANK_1 << 32, RANK_1 << 40, RANK_1 << 48];
+
 /// Macro for calculating tables (until const fn pointers are stable).
 macro_rules! init {
     ($idx:ident, $init:expr, $($rest:tt)+) => {{
