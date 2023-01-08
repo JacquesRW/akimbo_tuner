@@ -2,25 +2,23 @@ use std::{
     cmp,
     fs::File,
     io::{stdin, BufRead, BufReader},
-    ops::{AddAssign, Index, IndexMut, SubAssign},
+    ops::{AddAssign, Index, IndexMut, Mul},
     thread::{available_parallelism, scope, ScopedJoinHandle},
     time::Instant,
 };
 
 const CHARS: [char; 12] = ['P', 'N', 'B', 'R', 'Q', 'K', 'p', 'n', 'b', 'r', 'q', 'k'];
 const TPHASE: i32 = 24;
-const NUM_PARAMS: usize = 384;
+const NUM_PARAMS: usize = 5;
 const K: f32 = 0.4;
 const STEP: f32 = 0.001;
-const INIT: [[S; 64]; 6] = [[S(100, 100); 64], [S(300, 300); 64], [S(300, 300); 64], [S(500, 500); 64], [S(900, 900); 64], [S(0, 0); 64]];
 
 #[derive(Clone, Copy, Debug)]
 struct S(i16, i16);
 
 #[derive(Default)]
 struct Position {
-    psts: [[u16; 16]; 2],
-    counters: [u16; 2],
+    vals: [i16; NUM_PARAMS],
     phase: i16,
     result: f32,
 }
@@ -39,10 +37,10 @@ impl AddAssign<S> for S {
     }
 }
 
-impl SubAssign<S> for S {
-    fn sub_assign(&mut self, rhs: S) {
-        self.0 -= rhs.0;
-        self.1 -= rhs.1;
+impl Mul<S> for i16 {
+    type Output = S;
+    fn mul(self, rhs: S) -> Self::Output {
+        S(self * rhs.0, self * rhs.1)
     }
 }
 
@@ -62,6 +60,7 @@ impl Position {
     fn from_epd(epd: &str) -> Self {
         let mut pos = Position::default();
         let (mut row, mut col): (u16, u16) = (7, 0);
+        let mut bitboards: [[u64; 6]; 2] = [[0; 6]; 2];
         for ch in epd.chars() {
             if ch == '/' {row -= 1; col = 0;}
             else if ch == ' ' {break}
@@ -69,11 +68,13 @@ impl Position {
             else if let Some(idx) = CHARS.iter().position(|&element| element == ch) {
                 let c: usize = idx / 6;
                 let (pc, sq): (u16, u16) = (idx as u16 - 6 * c as u16, 8 * row + col);
-                pos.psts[c][pos.counters[c] as usize] = pc * 64 + (sq ^ (56 * (c as u16 ^ 1)));
-                pos.counters[c] += 1;
+                bitboards[c][pc as usize] |= 1 << sq;
                 pos.phase += [0, 1, 1, 2, 4, 0, 0][pc as usize];
                 col += 1;
             }
+        }
+        for i in 0..5 {
+            pos.vals[i] = bitboards[0][i].count_ones() as i16 - bitboards[1][i].count_ones() as i16;
         }
         pos.phase = cmp::min(pos.phase, TPHASE as i16);
         pos.result = match &epd[(epd.len() - 6)..] {"\"1-0\";" => 1.0, "\"0-1\";" => 0.0, _ => 0.5};
@@ -84,8 +85,7 @@ impl Position {
     fn err(&self, k: f32, params: &[S; NUM_PARAMS]) -> f32 {
         let p: i32 = self.phase as i32;
         let mut score = S(0, 0);
-        (0..usize::from(self.counters[0])).for_each(|i| score += params[self.psts[0][i] as usize]);
-        (0..usize::from(self.counters[1])).for_each(|i| score -= params[self.psts[1][i] as usize]);
+        self.vals.iter().enumerate().for_each(|(i, &val)| score += val * params[i]);
         let eval = ((p * score.0 as i32 + (TPHASE - p) * score.1 as i32) / TPHASE) as f32;
         (self.result - 1.0 / (1.0 + 10f32.powf(-k * eval / 100.0))).powi(2)
     }
@@ -106,7 +106,7 @@ fn error(k: f32, data: &Data) -> f32 {
 fn main() {
     // LOADING POSITIONS
     let mut data = Data {
-        params: INIT.concat().try_into().expect("hard coded"),
+        params: [S(100, 100), S(300, 300), S(300, 300), S(500, 500), S(900, 900)],
         positions: Vec::with_capacity(1_450_404),
         num: 0.0,
         size: 0,
@@ -159,7 +159,7 @@ fn main() {
         }
         println!("time {:.3}s error {best:.6}", time.elapsed().as_secs_f32());
     }
-    (0..12).for_each(|i| println!("{:?},", &data.params[i * 64..(i + 1) * 64]));
+    println!("{:?},", &data.params);
 
     // WAIT FOR EXIT
     stdin().read_line(&mut String::new()).expect("parsable");
