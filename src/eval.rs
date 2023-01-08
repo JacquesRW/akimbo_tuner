@@ -34,10 +34,17 @@ fn ratt(idx: usize, occ: u64) -> u64 {
     f | e | w
 }
 
-pub fn major_mobility(pc: usize, mut attackers: u64, occ: u64, friends: u64, unprotected: u64) -> (i16, i16, i16) {
+#[derive(Default)]
+pub struct MajorMobility {
+    pub threats: i16,
+    pub supports: i16,
+    pub controls: i16,
+}
+
+pub fn major_mobility(pc: usize, mut attackers: u64, occ: u64, friends: u64, unprotected: u64, danger: &mut i16, ksqs: u64) -> MajorMobility {
     let mut from: u8;
     let mut attacks: u64;
-    let mut ret: (i16, i16, i16) = (0, 0, 0);
+    let mut ret: MajorMobility = MajorMobility::default();
     attackers &= friends;
     while attackers > 0 {
         pop_lsb!(from, attackers);
@@ -48,9 +55,10 @@ pub fn major_mobility(pc: usize, mut attackers: u64, occ: u64, friends: u64, unp
             QUEEN => ratt(from as usize, occ) | batt(from as usize, occ),
             _ => unimplemented!("only implement the four major pieces"),
         };
-        ret.0 += (attacks & (occ & !friends)).count_ones() as i16; // threats
-        ret.1 += (attacks & friends).count_ones() as i16; // supports
-        ret.2 += (attacks & (!occ & unprotected)).count_ones() as i16; // other safe mobility
+        ret.threats += (attacks & (occ & !friends)).count_ones() as i16; // threats
+        ret.supports += (attacks & friends).count_ones() as i16; // supports
+        ret.controls += (attacks & (!occ & unprotected)).count_ones() as i16; // other safe mobility
+        *danger += (attacks & ksqs).count_ones() as i16;
     }
     ret
 }

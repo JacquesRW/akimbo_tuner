@@ -12,7 +12,7 @@ use std::{
     time::Instant,
 };
 
-pub const NUM_PARAMS: usize = 17;
+pub const NUM_PARAMS: usize = 18;
 const K: f32 = 0.4;
 const STEP: f32 = 0.001;
 
@@ -97,6 +97,7 @@ fn main() {
     println!("pub const THREATS: [S; 5] = {:?};", &data.params[5..9]);
     println!("pub const SUPPORTS: [S; 5] = {:?};", &data.params[9..13]);
     println!("pub const CONTROLS: [S; 5] = {:?};", &data.params[13..17]);
+    println!("pub const KING_SAFETY: S = {:?}", &data.params[17]);
 
     // WAIT FOR EXIT
     stdin().read_line(&mut String::new()).expect("parsable");
