@@ -1,5 +1,7 @@
 use crate::{consts::*, position::Position};
 
+pub const NUM_PARAMS: usize = 21;
+
 macro_rules! pop_lsb {($idx:expr, $x:expr) => {$idx = $x.trailing_zeros() as u8; $x &= $x - 1}}
 macro_rules! count {($bb:expr) => {$bb.count_ones() as i16}}
 
@@ -80,8 +82,8 @@ pub fn set_pos_vals(pos: &mut Position, bitboards: [[u64; 6]; 2], sides: [u64; 2
     // king danger stuff
     let mut wking_danger: i16 = 0;
     let mut bking_danger: i16 = 0;
-    let wking_sqs = KATT[bitboards[WHITE][KING].trailing_zeros() as usize];
-    let bking_sqs = KATT[bitboards[BLACK][KING].trailing_zeros() as usize];
+    let wking_sqs: u64 = KATT[bitboards[WHITE][KING].trailing_zeros() as usize];
+    let bking_sqs: u64 = KATT[bitboards[BLACK][KING].trailing_zeros() as usize];
 
     // set major piece mobility values
     for i in 0..4 {
@@ -94,6 +96,8 @@ pub fn set_pos_vals(pos: &mut Position, bitboards: [[u64; 6]; 2], sides: [u64; 2
     }
 
     // set pawn and king danger values
-    pos.vals[17] = wking_danger - bking_danger; // net number of squares adjacent to kings attacked
-    pos.vals[18] = count!(wp & wp_att) - count!(bp & bp_att); // net supported pawns
+    pos.vals[17] = wking_danger - bking_danger; // squares adjacent to king attacked
+    pos.vals[18] = count!(sides[WHITE] & wp_att) - count!(sides[BLACK] & bp_att); // pieces supported by pawns
+    pos.vals[19] = count!(sides[BLACK] & wp_att) - count!(sides[WHITE] & bp_att); // pieces threatened by pawns
+    pos.vals[20] = count!(wp & wking_sqs) - count!(bp & bking_sqs); // pawn shield
 }
