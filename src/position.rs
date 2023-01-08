@@ -4,7 +4,7 @@ const CHARS: [char; 12] = ['P', 'N', 'B', 'R', 'Q', 'K', 'p', 'n', 'b', 'r', 'q'
 
 #[derive(Default)]
 pub struct Position {
-    pub vals: [i16; NUM_PARAMS],
+    vals: [i16; NUM_PARAMS],
     phase: i16,
     result: f32,
 }
@@ -26,10 +26,12 @@ impl Position {
                 col += 1;
             }
         }
+
         // set material vals
         for i in 0..5 {
             pos.vals[i] = bitboards[0][i].count_ones() as i16 - bitboards[1][i].count_ones() as i16;
         }
+
         pos.phase = std::cmp::min(pos.phase, TPHASE as i16);
         pos.result = match &epd[(epd.len() - 6)..] {"\"1-0\";" => 1.0, "\"0-1\";" => 0.0, _ => 0.5};
         pos

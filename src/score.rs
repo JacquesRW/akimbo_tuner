@@ -32,7 +32,15 @@ impl IndexMut<bool> for S {
 
 impl S {
     pub const ONES: Self = Self(1, 1);
-    pub const INIT: [S; NUM_PARAMS] = [S(100, 100), S(320, 280), S(330, 290), S(450, 500), S(950, 900)];
+
+    pub const INIT: [Self; NUM_PARAMS] = [
+        Self(100, 100),
+        Self(320, 280),
+        Self(330, 290),
+        Self(450, 500),
+        Self(950, 900),
+    ];
+
     #[inline]
     pub fn taper(self, phase: i16) -> i32 {
         let p = phase as i32;

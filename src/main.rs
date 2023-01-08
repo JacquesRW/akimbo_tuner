@@ -15,6 +15,7 @@ pub const NUM_PARAMS: usize = 5;
 const K: f32 = 0.4;
 const STEP: f32 = 0.001;
 
+// collects all data into one struct
 struct Data {
     params: [S; NUM_PARAMS],
     positions: Vec<Position>,
