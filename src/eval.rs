@@ -1,6 +1,7 @@
 use crate::{consts::*, position::Position};
 
 macro_rules! pop_lsb {($idx:expr, $x:expr) => {$idx = $x.trailing_zeros() as u8; $x &= $x - 1}}
+macro_rules! count {($bb:expr) => {$bb.count_ones() as i16}}
 
 fn batt(idx: usize, occ: u64) -> u64 {
     let m: Mask = BMASKS[idx];
@@ -55,10 +56,10 @@ fn major_mobility(pc: usize, mut attackers: u64, occ: u64, friends: u64, unprote
             QUEEN => ratt(from as usize, occ) | batt(from as usize, occ),
             _ => unimplemented!("only implement the four major pieces"),
         };
-        ret.threats += (attacks & (occ & !friends)).count_ones() as i16; // threats
-        ret.supports += (attacks & friends).count_ones() as i16; // supports
-        ret.controls += (attacks & (!occ & unprotected)).count_ones() as i16; // other safe mobility
-        *danger += (attacks & ksqs).count_ones() as i16;
+        ret.threats += count!(attacks & (occ & !friends)); // threats
+        ret.supports += count!(attacks & friends); // supports
+        ret.controls += count!(attacks & (!occ & unprotected)); // other safe mobility
+        *danger += count!(attacks & ksqs);
     }
     ret
 }
@@ -69,16 +70,20 @@ pub fn set_pos_vals(pos: &mut Position, bitboards: [[u64; 6]; 2], sides: [u64; 2
         pos.vals[i] = bitboards[WHITE][i].count_ones() as i16 - bitboards[BLACK][i].count_ones() as i16;
     }
 
-    // set major piece mobility values
+    // pawn stuff
     let occ: u64 = sides[WHITE] | sides[BLACK];
     let wp: u64 = bitboards[WHITE][PAWN];
     let bp: u64 = bitboards[BLACK][PAWN];
     let wp_att: u64 = ((wp & !FILE) << 7) | ((wp & NOTH) << 9);
     let bp_att: u64 = ((bp & !FILE) >> 9) | ((bp & NOTH) >> 7);
+
+    // king danger stuff
     let mut wking_danger: i16 = 0;
     let mut bking_danger: i16 = 0;
     let wking_sqs = KATT[bitboards[WHITE][KING].trailing_zeros() as usize];
     let bking_sqs = KATT[bitboards[BLACK][KING].trailing_zeros() as usize];
+
+    // set major piece mobility values
     for i in 0..4 {
         let idx: usize = KING + i;
         let w_maj_mob: MajorMobility = major_mobility(i + 1, bitboards[WHITE][i + 1], occ, sides[WHITE], !bp_att, &mut bking_danger, bking_sqs);
@@ -87,5 +92,8 @@ pub fn set_pos_vals(pos: &mut Position, bitboards: [[u64; 6]; 2], sides: [u64; 2
         pos.vals[idx + 4] = w_maj_mob.supports - b_maj_mob.supports;
         pos.vals[idx + 8] = w_maj_mob.controls - b_maj_mob.controls;
     }
-    pos.vals[17] = wking_danger - bking_danger;
+
+    // set pawn and king danger values
+    pos.vals[17] = wking_danger - bking_danger; // net number of squares adjacent to kings attacked
+    pos.vals[18] = count!(wp & wp_att) - count!(bp & bp_att); // net supported pawns
 }
