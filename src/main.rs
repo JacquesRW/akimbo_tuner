@@ -93,7 +93,7 @@ fn main() {
         }
         println!("time {:.3}s error {best:.6}", time.elapsed().as_secs_f32());
     }
-    println!("{:#?},", &data.params);
+    data.params.iter().for_each(|param| println!("{param:?},"));
 
     // WAIT FOR EXIT
     stdin().read_line(&mut String::new()).expect("parsable");
