@@ -92,7 +92,11 @@ fn main() {
         }
         println!("time {:.3}s error {best:.6}", time.elapsed().as_secs_f32());
     }
-    data.params.iter().for_each(|param| println!("{param:?},"));
+    // outputting parameters
+    println!("pub const MATERIAL: [S; 7] = {:?}, S(0, 0), S(0, 0)];", &data.params[0..5]);
+    println!("pub const THREATS: [S; 5] = {:?};", &data.params[5..9]);
+    println!("pub const SUPPORTS: [S; 5] = {:?};", &data.params[9..13]);
+    println!("pub const CONTROLS: [S; 5] = {:?};", &data.params[13..17]);
 
     // WAIT FOR EXIT
     stdin().read_line(&mut String::new()).expect("parsable");
