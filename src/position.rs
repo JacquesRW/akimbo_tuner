@@ -1,10 +1,10 @@
-use crate::{S, NUM_PARAMS, consts::*, eval::{major_mobility, MajorMobility}};
+use crate::{S, NUM_PARAMS, consts::*, eval::set_pos_vals};
 
 const CHARS: [char; 12] = ['P', 'N', 'B', 'R', 'Q', 'K', 'p', 'n', 'b', 'r', 'q', 'k'];
 
 #[derive(Default, Debug)]
 pub struct Position {
-    vals: [i16; NUM_PARAMS],
+    pub vals: [i16; NUM_PARAMS],
     phase: i16,
     result: f32,
 }
@@ -29,30 +29,7 @@ impl Position {
             }
         }
 
-        // set material vals
-        for i in PAWN..=QUEEN {
-            pos.vals[i] = bitboards[WHITE][i].count_ones() as i16 - bitboards[BLACK][i].count_ones() as i16;
-        }
-
-        // set major piece mobility values
-        let occ: u64 = sides[WHITE] | sides[BLACK];
-        let wp: u64 = bitboards[WHITE][PAWN];
-        let bp: u64 = bitboards[BLACK][PAWN];
-        let wp_att: u64 = ((wp & !FILE) << 7) | ((wp & NOTH) << 9);
-        let bp_att: u64 = ((bp & !FILE) >> 9) | ((bp & NOTH) >> 7);
-        let mut wking_danger: i16 = 0;
-        let mut bking_danger: i16 = 0;
-        let wking_sqs = KATT[bitboards[WHITE][KING].trailing_zeros() as usize];
-        let bking_sqs = KATT[bitboards[BLACK][KING].trailing_zeros() as usize];
-        for i in 0..4 {
-            let idx: usize = KING + i;
-            let w_maj_mob: MajorMobility = major_mobility(i + 1, bitboards[WHITE][i + 1], occ, sides[WHITE], !bp_att, &mut bking_danger, bking_sqs);
-            let b_maj_mob: MajorMobility = major_mobility(i + 1, bitboards[BLACK][i + 1], occ, sides[BLACK], !wp_att, &mut wking_danger, wking_sqs);
-            pos.vals[idx] = w_maj_mob.threats - b_maj_mob.threats;
-            pos.vals[idx + 4] = w_maj_mob.supports - b_maj_mob.supports;
-            pos.vals[idx + 8] = w_maj_mob.controls - b_maj_mob.controls;
-        }
-        pos.vals[17] = wking_danger - bking_danger;
+        set_pos_vals(&mut pos, bitboards, sides);
 
         pos.phase = std::cmp::min(pos.phase, TPHASE as i16);
         pos.result = match &epd[(epd.len() - 6)..] {"\"1-0\";" => 1.0, "\"0-1\";" => 0.0, _ => 0.5};

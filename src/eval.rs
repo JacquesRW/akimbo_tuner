@@ -1,4 +1,4 @@
-use crate::consts::*;
+use crate::{consts::*, position::Position};
 
 macro_rules! pop_lsb {($idx:expr, $x:expr) => {$idx = $x.trailing_zeros() as u8; $x &= $x - 1}}
 
@@ -35,13 +35,13 @@ fn ratt(idx: usize, occ: u64) -> u64 {
 }
 
 #[derive(Default)]
-pub struct MajorMobility {
-    pub threats: i16,
-    pub supports: i16,
-    pub controls: i16,
+struct MajorMobility {
+    threats: i16,
+    supports: i16,
+    controls: i16,
 }
 
-pub fn major_mobility(pc: usize, mut attackers: u64, occ: u64, friends: u64, unprotected: u64, danger: &mut i16, ksqs: u64) -> MajorMobility {
+fn major_mobility(pc: usize, mut attackers: u64, occ: u64, friends: u64, unprotected: u64, danger: &mut i16, ksqs: u64) -> MajorMobility {
     let mut from: u8;
     let mut attacks: u64;
     let mut ret: MajorMobility = MajorMobility::default();
@@ -61,4 +61,31 @@ pub fn major_mobility(pc: usize, mut attackers: u64, occ: u64, friends: u64, unp
         *danger += (attacks & ksqs).count_ones() as i16;
     }
     ret
+}
+
+pub fn set_pos_vals(pos: &mut Position, bitboards: [[u64; 6]; 2], sides: [u64; 2]) {
+    // set material vals
+    for i in PAWN..=QUEEN {
+        pos.vals[i] = bitboards[WHITE][i].count_ones() as i16 - bitboards[BLACK][i].count_ones() as i16;
+    }
+
+    // set major piece mobility values
+    let occ: u64 = sides[WHITE] | sides[BLACK];
+    let wp: u64 = bitboards[WHITE][PAWN];
+    let bp: u64 = bitboards[BLACK][PAWN];
+    let wp_att: u64 = ((wp & !FILE) << 7) | ((wp & NOTH) << 9);
+    let bp_att: u64 = ((bp & !FILE) >> 9) | ((bp & NOTH) >> 7);
+    let mut wking_danger: i16 = 0;
+    let mut bking_danger: i16 = 0;
+    let wking_sqs = KATT[bitboards[WHITE][KING].trailing_zeros() as usize];
+    let bking_sqs = KATT[bitboards[BLACK][KING].trailing_zeros() as usize];
+    for i in 0..4 {
+        let idx: usize = KING + i;
+        let w_maj_mob: MajorMobility = major_mobility(i + 1, bitboards[WHITE][i + 1], occ, sides[WHITE], !bp_att, &mut bking_danger, bking_sqs);
+        let b_maj_mob: MajorMobility = major_mobility(i + 1, bitboards[BLACK][i + 1], occ, sides[BLACK], !wp_att, &mut wking_danger, wking_sqs);
+        pos.vals[idx] = w_maj_mob.threats - b_maj_mob.threats;
+        pos.vals[idx + 4] = w_maj_mob.supports - b_maj_mob.supports;
+        pos.vals[idx + 8] = w_maj_mob.controls - b_maj_mob.controls;
+    }
+    pos.vals[17] = wking_danger - bking_danger;
 }
