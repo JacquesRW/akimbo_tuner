@@ -106,7 +106,7 @@ fn error(k: f32, data: &Data) -> f32 {
 fn main() {
     // LOADING POSITIONS
     let mut data = Data {
-        params: [S(100, 100), S(300, 300), S(300, 300), S(500, 500), S(900, 900)],
+        params: [S(100, 100), S(320, 280), S(330, 290), S(450, 500), S(950, 900)],
         positions: Vec::with_capacity(1_450_404),
         num: 0.0,
         size: 0,
