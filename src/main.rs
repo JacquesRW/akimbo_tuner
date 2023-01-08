@@ -4,6 +4,7 @@ mod eval;
 mod position;
 
 pub use eval::NUM_PARAMS;
+use consts::*;
 use score::S;
 use position::Position;
 use std::{
@@ -13,6 +14,7 @@ use std::{
     time::Instant,
 };
 
+// optimising k-value stuff
 const K: f32 = 0.4;
 const STEP: f32 = 0.001;
 
@@ -97,10 +99,10 @@ fn main() {
     println!("pub const THREATS: [S; 4] = {:?};", &data.params[5..9]);
     println!("pub const SUPPORTS: [S; 4] = {:?};", &data.params[9..13]);
     println!("pub const CONTROLS: [S; 4] = {:?};", &data.params[13..17]);
-    println!("pub const KING_SAFETY: S = {:?};", &data.params[17]);
-    println!("pub const PAWNS_SUPPORTS: S = {:?};", &data.params[18]);
-    println!("pub const PAWN_THREATS: S = {:?};", &data.params[19]);
-    println!("pub const PAWN_SHIELD: S = {:?};", &data.params[20]);
+    println!("pub const KING_SAFETY: S = {:?};", &data.params[KING_SAFETY]);
+    println!("pub const PAWN_SUPPORTS: S = {:?};", &data.params[PAWN_SUPPORTS]);
+    println!("pub const PAWN_THREATS: S = {:?};", &data.params[PAWN_THREATS]);
+    println!("pub const PAWN_SHIELD: S = {:?};", &data.params[PAWN_SHIELD]);
 
     // WAIT FOR EXIT
     stdin().read_line(&mut String::new()).expect("parsable");

@@ -1,5 +1,11 @@
 pub const TPHASE: i32 = 24;
 
+// storage locations of certain features
+pub const KING_SAFETY: usize = 17;
+pub const PAWN_SUPPORTS: usize = 18;
+pub const PAWN_THREATS: usize = 19;
+pub const PAWN_SHIELD: usize = 20;
+
 // pieces
 pub const PAWN: usize = 0;
 pub const KNIGHT: usize = 1;

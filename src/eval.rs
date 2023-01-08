@@ -96,8 +96,8 @@ pub fn set_pos_vals(pos: &mut Position, bitboards: [[u64; 6]; 2], sides: [u64; 2
     }
 
     // set pawn and king danger values
-    pos.vals[17] = wking_danger - bking_danger; // squares adjacent to king attacked
-    pos.vals[18] = count!(sides[WHITE] & wp_att) - count!(sides[BLACK] & bp_att); // pieces supported by pawns
-    pos.vals[19] = count!(sides[BLACK] & wp_att) - count!(sides[WHITE] & bp_att); // pieces threatened by pawns
-    pos.vals[20] = count!(wp & wking_sqs) - count!(bp & bking_sqs); // pawn shield
+    pos.vals[KING_SAFETY] = wking_danger - bking_danger;
+    pos.vals[PAWN_SUPPORTS] = count!(sides[WHITE] & wp_att) - count!(sides[BLACK] & bp_att);
+    pos.vals[PAWN_THREATS] = count!(sides[BLACK] & wp_att) - count!(sides[WHITE] & bp_att);
+    pos.vals[PAWN_SHIELD] = count!(wp & wking_sqs) - count!(bp & bking_sqs);
 }
