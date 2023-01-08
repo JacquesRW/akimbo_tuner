@@ -35,10 +35,10 @@ impl S {
 
     pub const INIT: [Self; NUM_PARAMS] = [
         Self(100, 100),
-        Self(320, 280),
-        Self(330, 290),
-        Self(450, 500),
-        Self(950, 900),
+        Self(300, 300),
+        Self(300, 300),
+        Self(500, 500),
+        Self(900, 900),
         Self(0, 0),
         Self(0, 0),
         Self(0, 0),

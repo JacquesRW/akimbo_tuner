@@ -52,7 +52,6 @@ fn main() {
     });
     data.size = data.positions.len() / available_parallelism().expect("available").get();
     println!("positions {:.0} ({}/sec)", data.num, data.num / time.elapsed().as_secs_f32());
-    println!("{:?}", data.positions[0]);
 
     // OPTIMISING K VALUE
     time = Instant::now();

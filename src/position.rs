@@ -41,12 +41,12 @@ impl Position {
         let wp_att: u64 = ((wp & !FILE) << 7) | ((wp & NOTH) << 9);
         let bp_att: u64 = ((bp & !FILE) >> 9) | ((bp & NOTH) >> 7);
         for i in 0..4 {
-            let idx: usize = KING + 3 * i;
+            let idx: usize = KING + i;
             let (w_thr, w_sup, w_oth): (i16, i16, i16) = major_mobility(i + 1, bitboards[WHITE][i + 1], occ, sides[WHITE], !bp_att);
             let (b_thr, b_sup, b_oth): (i16, i16, i16) = major_mobility(i + 1, bitboards[BLACK][i + 1], occ, sides[BLACK], !wp_att);
             pos.vals[idx] = w_thr - b_thr;
-            pos.vals[idx + 1] = w_sup - b_sup;
-            pos.vals[idx + 2] = w_oth - b_oth;
+            pos.vals[idx + 4] = w_sup - b_sup;
+            pos.vals[idx + 8] = w_oth - b_oth;
         }
 
         pos.phase = std::cmp::min(pos.phase, TPHASE as i16);
