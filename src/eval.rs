@@ -69,7 +69,7 @@ fn major_mobility(pc: usize, mut attackers: u64, occ: u64, friends: u64, unprote
             KNIGHT => NATT[from as usize],
             BISHOP => batt(from as usize, occ),
             ROOK => ratt(from as usize, occ),
-            //QUEEN => ratt(from as usize, occ) | batt(from as usize, occ),
+            QUEEN => ratt(from as usize, occ) | batt(from as usize, occ),
             _ => unimplemented!("only implement the four major pieces"),
         };
         ret.threats += count!(attacks & (occ & !friends)); // threats
