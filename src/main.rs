@@ -100,8 +100,13 @@ fn main() {
     println!("pub const PROGRESS: [S; 5] = {:?};", &data.params[PAWN_PROGRESSION..PAWN_PROGRESSION + 5]);
     println!("pub const MAJOR_THREAT: [S; {MAJOR_PIECES}] = {:?};", &data.params[MAJOR_THREAT..MAJOR_THREAT + MAJOR_PIECES]);
     println!("pub const MAJOR_DEFEND: [S; {MAJOR_PIECES}] = {:?};", &data.params[MAJOR_DEFEND..MAJOR_DEFEND + MAJOR_PIECES]);
+    println!("pub const MAJOR_ATTACK: [S; {MAJOR_PIECES}] = {:?};", &data.params[MAJOR_ATTACK..MAJOR_ATTACK + MAJOR_PIECES]);
+    println!("pub const PAWN_THREAT: S = {:?};", &data.params[PAWN_THREAT]);
+    println!("pub const PAWN_DEFEND: S = {:?};", &data.params[PAWN_DEFEND]);
     println!("pub const PAWN_SHIELD: S = {:?};", &data.params[PAWN_SHIELD]);
+    println!("pub const PAWN_PASSED: S = {:?};", &data.params[PAWN_PASSED]);
     println!("pub const KING_SAFETY: S = {:?};", &data.params[KING_SAFETY]);
+    println!("pub const BISHOP_PAIR: S = {:?};", &data.params[BISHOP_PAIR]);
 
     // WAIT FOR EXIT
     stdin().read_line(&mut String::new()).expect("parsable");
