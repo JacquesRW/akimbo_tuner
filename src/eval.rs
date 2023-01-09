@@ -105,8 +105,20 @@ pub fn set_pos_vals(pos: &mut Position, bitboards: [[u64; 6]; 2], sides: [u64; 2
 
     // set major piece mobility values
     for i in 0..MAJOR_PIECES {
-        let w_maj_mob: MajorMobility = major_mobility(i + 1, bitboards[WHITE][i + 1], occ, sides[WHITE], !bp_att, &mut bking_danger, bking_sqs);
-        let b_maj_mob: MajorMobility = major_mobility(i + 1, bitboards[BLACK][i + 1], occ, sides[BLACK], !wp_att, &mut wking_danger, wking_sqs);
+        // rooks don't block each other, rooks and bishops don't block queen, queen blocks nothing
+        let (tw, tb): (u64, u64) = match i + 1 {
+            ROOK => (
+                bitboards[WHITE][ROOK] ^ bitboards[WHITE][QUEEN],
+                bitboards[BLACK][ROOK] ^ bitboards[BLACK][QUEEN],
+            ),
+            QUEEN => (
+                bitboards[WHITE][BISHOP] ^ bitboards[WHITE][ROOK] ^ bitboards[WHITE][QUEEN],
+                bitboards[BLACK][BISHOP] ^ bitboards[BLACK][ROOK] ^ bitboards[BLACK][QUEEN],
+            ),
+            _ => (bitboards[WHITE][QUEEN], bitboards[BLACK][QUEEN])
+        };
+        let w_maj_mob: MajorMobility = major_mobility(i + 1, bitboards[WHITE][i + 1], occ ^ tw, sides[WHITE], !bp_att, &mut bking_danger, bking_sqs);
+        let b_maj_mob: MajorMobility = major_mobility(i + 1, bitboards[BLACK][i + 1], occ ^ tb, sides[BLACK], !wp_att, &mut wking_danger, wking_sqs);
         pos.vals[MAJOR_THREAT + i] = w_maj_mob.threat - b_maj_mob.threat;
         pos.vals[MAJOR_DEFEND + i] = w_maj_mob.defend - b_maj_mob.defend;
         pos.vals[MAJOR_ATTACK + i] = w_maj_mob.attack - b_maj_mob.attack;
