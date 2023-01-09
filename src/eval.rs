@@ -135,10 +135,7 @@ pub fn set_pos_vals(pos: &mut Position, bitboards: [[u64; 6]; 2], sides: [u64; 2
 
     // doubled and isolated pawns
     for file in 0..8 {
-        let wc: i16 = count!(FILES[file] & wp);
-        let bc: i16 = count!(FILES[file] & bp);
-        pos.vals[PAWN_DOUBLE] += wc.saturating_sub(1) - bc.saturating_sub(1);
-        pos.vals[PAWN_ISOLATED] += i16::from(RAILS[file] & wp == 0) * wc - i16::from(RAILS[file] & bp == 0) * bc;
+        pos.vals[PAWN_ISOLATED] += i16::from(RAILS[file] & wp == 0) * count!(FILES[file] & wp) - i16::from(RAILS[file] & bp == 0) * count!(FILES[file] & bp);
     }
 
     // bishop pair bonus

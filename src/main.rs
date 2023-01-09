@@ -105,7 +105,6 @@ fn main() {
     println!("pub const PAWN_DEFEND: S = {:?};", &data.params[PAWN_DEFEND]);
     println!("pub const PAWN_SHIELD: S = {:?};", &data.params[PAWN_SHIELD]);
     println!("pub const PAWN_PASSED: S = {:?};", &data.params[PAWN_PASSED]);
-    println!("pub const PAWN_DOUBLE: S = {:?};", &data.params[PAWN_DOUBLE]);
     println!("pub const PAWN_ISOLATED: S = {:?};", &data.params[PAWN_ISOLATED]);
     println!("pub const KING_SAFETY: S = {:?};", &data.params[KING_SAFETY]);
     println!("pub const BISHOP_PAIR: S = {:?};", &data.params[BISHOP_PAIR]);

@@ -14,8 +14,7 @@ pub const PAWN_DEFEND: usize = PAWN_THREAT + 1;
 pub const PAWN_SHIELD: usize = PAWN_DEFEND + 1;
 pub const PAWN_PASSED: usize = PAWN_SHIELD + 1;
 pub const KING_SAFETY: usize = PAWN_PASSED + 1;
-pub const PAWN_DOUBLE: usize = KING_SAFETY + 1;
-pub const PAWN_ISOLATED: usize = PAWN_DOUBLE + 1;
+pub const PAWN_ISOLATED: usize = KING_SAFETY + 1;
 pub const BISHOP_PAIR: usize = PAWN_ISOLATED + 1;
 
 // pieces
