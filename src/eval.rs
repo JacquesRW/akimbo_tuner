@@ -1,6 +1,6 @@
 use crate::{consts::*, position::Position};
 
-pub const NUM_PARAMS: usize = 37;
+pub const NUM_PARAMS: usize = 29;
 
 macro_rules! pop_lsb {($idx:expr, $x:expr) => {$idx = $x.trailing_zeros() as u8; $x &= $x - 1}}
 macro_rules! count {($bb:expr) => {$bb.count_ones() as i16}}
@@ -95,6 +95,11 @@ pub fn set_pos_vals(pos: &mut Position, bitboards: [[u64; 6]; 2], sides: [u64; 2
     let wp_att: u64 = ((wp & !FILE) << 7) | ((wp & NOTH) << 9);
     let bp_att: u64 = ((bp & !FILE) >> 9) | ((bp & NOTH) >> 7);
 
+    // pawn progression
+    for i in 0..6 {
+        pos.vals[PAWN_PROGRESSION + i] = count!(wp & PAWN_RANKS[i]) - count!(bp & PAWN_RANKS[5 - i]);
+    }
+
     // king danger stuff
     let mut wking_danger: i16 = 0;
     let mut bking_danger: i16 = 0;
@@ -103,7 +108,7 @@ pub fn set_pos_vals(pos: &mut Position, bitboards: [[u64; 6]; 2], sides: [u64; 2
 
     // set major piece mobility values
     for i in 0..4 {
-        let idx: usize = KING + i;
+        let idx: usize = MAJOR_THREAT + i;
         let w_maj_mob: MajorMobility = major_mobility(i + 1, bitboards[WHITE][i + 1], occ, sides[WHITE], !bp_att, &mut bking_danger, bking_sqs);
         let b_maj_mob: MajorMobility = major_mobility(i + 1, bitboards[BLACK][i + 1], occ, sides[BLACK], !wp_att, &mut wking_danger, wking_sqs);
         pos.vals[idx] = w_maj_mob.threats - b_maj_mob.threats;
@@ -113,8 +118,8 @@ pub fn set_pos_vals(pos: &mut Position, bitboards: [[u64; 6]; 2], sides: [u64; 2
 
     // set pawn and king danger values
     pos.vals[KING_SAFETY] = wking_danger - bking_danger;
-    pos.vals[PAWN_SUPPORTS] = count!(sides[WHITE] & wp_att) - count!(sides[BLACK] & bp_att);
-    pos.vals[PAWN_THREATS] = count!(sides[BLACK] & wp_att) - count!(sides[WHITE] & bp_att);
+    pos.vals[PAWN_THREAT] = count!(sides[BLACK] & wp_att) - count!(sides[WHITE] & bp_att);
+    pos.vals[PAWN_DEFEND] = count!(sides[WHITE] & wp_att) - count!(sides[BLACK] & bp_att);
     pos.vals[PAWN_SHIELD] = count!(wp & wking_sqs) - count!(bp & bking_sqs);
 
     // passed pawns
@@ -123,17 +128,7 @@ pub fn set_pos_vals(pos: &mut Position, bitboards: [[u64; 6]; 2], sides: [u64; 2
     let passers = count!(wp & !fspans);
     fspans = wspans(wp);
     fspans |= (fspans & NOTH) >> 1 | (fspans & !FILE) << 1;
-    pos.vals[PASSED_PAWNS] = passers - count!(bp & !fspans);
-
-    // pawn progression
-    for i in 0..6 {
-        pos.vals[PAWN_PROGRESSION + i] = count!(wp & PAWN_RANKS[i]) - count!(bp & PAWN_RANKS[5 - i]);
-    }
-
-    // pawn file bonuses
-    for i in 0..8 {
-        pos.vals[PAWN_FILES + i] = count!(wp & FILES[i]) - count!(bp & FILES[7 - i]);
-    }
+    pos.vals[PAWN_PASSED] = passers - count!(bp & !fspans);
 
     // bishop pair bonus
     let wb: u64 = bitboards[WHITE][BISHOP];

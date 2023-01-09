@@ -1,14 +1,16 @@
 pub const TPHASE: i32 = 24;
 
 // storage locations of certain features
-pub const KING_SAFETY: usize = 17;
-pub const PAWN_SUPPORTS: usize = 18;
-pub const PAWN_THREATS: usize = 19;
-pub const PAWN_SHIELD: usize = 20;
-pub const PASSED_PAWNS: usize = 21;
-pub const PAWN_PROGRESSION: usize = 22;
-pub const PAWN_FILES: usize = PAWN_PROGRESSION + 6;
-pub const BISHOP_PAIR: usize = 36;
+pub const PAWN_PROGRESSION: usize = 5;
+pub const MAJOR_THREAT: usize = 11;
+pub const MAJOR_DEFEND: usize = 15;
+pub const MAJOR_ATTACK: usize = 19;
+pub const PAWN_THREAT: usize = 23;
+pub const PAWN_DEFEND: usize = 24;
+pub const PAWN_SHIELD: usize = 25;
+pub const PAWN_PASSED: usize = 26;
+pub const KING_SAFETY: usize = 27;
+pub const BISHOP_PAIR: usize = 28;
 
 // pieces
 pub const PAWN: usize = 0;
@@ -33,9 +35,6 @@ pub const DIAGS: [u64; 15] = [
 
 // ranks that pawns can be on
 pub const PAWN_RANKS: [u64; 6] = [0xFF << 8, 0xFF << 16, 0xFF << 24, 0xFF << 32, 0xFF << 40, 0xFF << 48];
-
-// files
-pub const FILES: [u64; 8] = [FILE << 1, FILE << 2, FILE << 3, FILE << 4, FILE << 5, FILE << 6, FILE << 7, FILE << 8];
 
 /// Macro for calculating tables (until const fn pointers are stable).
 macro_rules! init {
