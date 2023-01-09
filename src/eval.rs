@@ -1,9 +1,25 @@
 use crate::{consts::*, position::Position};
 
-pub const NUM_PARAMS: usize = 27;
+pub const NUM_PARAMS: usize = 37;
 
 macro_rules! pop_lsb {($idx:expr, $x:expr) => {$idx = $x.trailing_zeros() as u8; $x &= $x - 1}}
 macro_rules! count {($bb:expr) => {$bb.count_ones() as i16}}
+
+#[inline(always)]
+fn wspans(mut pwns: u64) -> u64 {
+    pwns |= pwns << 8;
+    pwns |= pwns << 16;
+    pwns |= pwns << 32;
+    pwns << 8
+}
+
+#[inline(always)]
+fn bspans(mut pwns: u64) -> u64 {
+    pwns |= pwns >> 8;
+    pwns |= pwns >> 16;
+    pwns |= pwns >> 32;
+    pwns >> 8
+}
 
 fn batt(idx: usize, occ: u64) -> u64 {
     let m: Mask = BMASKS[idx];
@@ -101,8 +117,26 @@ pub fn set_pos_vals(pos: &mut Position, bitboards: [[u64; 6]; 2], sides: [u64; 2
     pos.vals[PAWN_THREATS] = count!(sides[BLACK] & wp_att) - count!(sides[WHITE] & bp_att);
     pos.vals[PAWN_SHIELD] = count!(wp & wking_sqs) - count!(bp & bking_sqs);
 
+    // passed pawns
+    let mut fspans = bspans(bp);
+    fspans |= (fspans & NOTH) >> 1 | (fspans & !FILE) << 1;
+    let passers = count!(wp & !fspans);
+    fspans = wspans(wp);
+    fspans |= (fspans & NOTH) >> 1 | (fspans & !FILE) << 1;
+    pos.vals[PASSED_PAWNS] = passers - count!(bp & !fspans);
+
     // pawn progression
     for i in 0..6 {
-        pos.vals[21 + i] = count!(wp & PAWN_RANKS[i]) - count!(bp & PAWN_RANKS[5 - i]);
+        pos.vals[PAWN_PROGRESSION + i] = count!(wp & PAWN_RANKS[i]) - count!(bp & PAWN_RANKS[5 - i]);
     }
+
+    // pawn file bonuses
+    for i in 0..8 {
+        pos.vals[PAWN_FILES + i] = count!(wp & FILES[i]) - count!(bp & FILES[7 - i]);
+    }
+
+    // bishop pair bonus
+    let wb: u64 = bitboards[WHITE][BISHOP];
+    let bb: u64 = bitboards[BLACK][BISHOP];
+    pos.vals[BISHOP_PAIR] = i16::from(wb & (wb - 1) > 0) - i16::from(bb & (bb - 1) > 0);
 }

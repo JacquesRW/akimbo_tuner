@@ -5,6 +5,10 @@ pub const KING_SAFETY: usize = 17;
 pub const PAWN_SUPPORTS: usize = 18;
 pub const PAWN_THREATS: usize = 19;
 pub const PAWN_SHIELD: usize = 20;
+pub const PASSED_PAWNS: usize = 21;
+pub const PAWN_PROGRESSION: usize = 22;
+pub const PAWN_FILES: usize = PAWN_PROGRESSION + 6;
+pub const BISHOP_PAIR: usize = 36;
 
 // pieces
 pub const PAWN: usize = 0;
@@ -27,9 +31,11 @@ pub const DIAGS: [u64; 15] = [
     0x0000008040201008, 0x0000000080402010, 0x0000000000804020, 0x0000000000008040, 0x0000000000000080,
 ];
 
-// ranks
-const RANK_1: u64 = 0xFF;
-pub const PAWN_RANKS: [u64; 6] = [RANK_1 << 8, RANK_1 << 16, RANK_1 << 24, RANK_1 << 32, RANK_1 << 40, RANK_1 << 48];
+// ranks that pawns can be on
+pub const PAWN_RANKS: [u64; 6] = [0xFF << 8, 0xFF << 16, 0xFF << 24, 0xFF << 32, 0xFF << 40, 0xFF << 48];
+
+// files
+pub const FILES: [u64; 8] = [FILE << 1, FILE << 2, FILE << 3, FILE << 4, FILE << 5, FILE << 6, FILE << 7, FILE << 8];
 
 /// Macro for calculating tables (until const fn pointers are stable).
 macro_rules! init {

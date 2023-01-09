@@ -2,7 +2,7 @@ use crate::{S, NUM_PARAMS, consts::*, eval::set_pos_vals};
 
 const CHARS: [char; 12] = ['P', 'N', 'B', 'R', 'Q', 'K', 'p', 'n', 'b', 'r', 'q', 'k'];
 
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub struct Position {
     pub vals: [i16; NUM_PARAMS],
     phase: i16,
@@ -11,7 +11,7 @@ pub struct Position {
 
 impl Position {
     pub fn from_epd(epd: &str) -> Self {
-        let mut pos = Position::default();
+        let mut pos = Position { vals: [0; NUM_PARAMS], phase: 0, result: 0.0};
         let (mut row, mut col): (u16, u16) = (7, 0);
         let mut bitboards: [[u64; 6]; 2] = [[0; 6]; 2];
         let mut sides: [u64; 2] = [0; 2];
