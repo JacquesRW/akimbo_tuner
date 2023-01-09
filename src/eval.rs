@@ -57,7 +57,7 @@ struct MajorMobility {
     attack: i16,
 }
 
-fn major_mobility(pc: usize, mut attackers: u64, occ: u64, friends: u64, unprotected: u64, danger: &mut i16, ksqs: u64) -> MajorMobility {
+fn major_mobility(pc: usize, mut attackers: u64, occ: u64, friends: u64, danger: &mut i16, ksqs: u64, np_att: u64) -> MajorMobility {
     let mut from: usize;
     let mut attacks: u64;
     let mut ret: MajorMobility = MajorMobility::default();
@@ -73,7 +73,7 @@ fn major_mobility(pc: usize, mut attackers: u64, occ: u64, friends: u64, unprote
         };
         ret.threat += count!(attacks & (occ & !friends));
         ret.defend += count!(attacks & friends);
-        ret.attack += count!(attacks & (!occ & unprotected));
+        ret.attack += count!(attacks & (!occ & np_att));
         *danger += count!(attacks & ksqs);
     }
     ret
@@ -117,8 +117,8 @@ pub fn set_pos_vals(pos: &mut Position, bitboards: [[u64; 6]; 2], sides: [u64; 2
             ),
             _ => (bitboards[WHITE][QUEEN], bitboards[BLACK][QUEEN])
         };
-        let w_maj_mob: MajorMobility = major_mobility(i + 1, bitboards[WHITE][i + 1], occ ^ tw, sides[WHITE], !bp_att, &mut bking_danger, bking_sqs);
-        let b_maj_mob: MajorMobility = major_mobility(i + 1, bitboards[BLACK][i + 1], occ ^ tb, sides[BLACK], !wp_att, &mut wking_danger, wking_sqs);
+        let w_maj_mob: MajorMobility = major_mobility(i + 1, bitboards[WHITE][i + 1], occ ^ tw, sides[WHITE], &mut bking_danger, bking_sqs, !bp_att);
+        let b_maj_mob: MajorMobility = major_mobility(i + 1, bitboards[BLACK][i + 1], occ ^ tb, sides[BLACK], &mut wking_danger, wking_sqs, !wp_att);
         pos.vals[MAJOR_THREAT + i] = w_maj_mob.threat - b_maj_mob.threat;
         pos.vals[MAJOR_DEFEND + i] = w_maj_mob.defend - b_maj_mob.defend;
         pos.vals[MAJOR_ATTACK + i] = w_maj_mob.attack - b_maj_mob.attack;
@@ -137,6 +137,14 @@ pub fn set_pos_vals(pos: &mut Position, bitboards: [[u64; 6]; 2], sides: [u64; 2
     fspans = wspans(wp);
     fspans |= (fspans & NOTH) >> 1 | (fspans & !FILE) << 1;
     pos.vals[PAWN_PASSED] = passers - count!(bp & !fspans);
+
+    // doubled and isolated pawns
+    for file in 0..8 {
+        let wc: i16 = count!(FILES[file] & wp);
+        let bc: i16 = count!(FILES[file] & bp);
+        pos.vals[PAWN_DOUBLE] += wc.saturating_sub(1) - bc.saturating_sub(1);
+        pos.vals[PAWN_ISOLATED] += i16::from(wc > 0 && RAILS[file] & wp == 0) - i16::from(bc > 0 && RAILS[file] & bp == 0);
+    }
 
     // bishop pair bonus
     let wb: u64 = bitboards[WHITE][BISHOP];
