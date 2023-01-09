@@ -6,7 +6,7 @@ pub const MAJOR_PIECES: usize = 4;
 
 // storage locations of certain features
 pub const PAWN_PROGRESSION: usize = 5;
-pub const MAJOR_THREAT: usize = 11;
+pub const MAJOR_THREAT: usize = 10;
 pub const MAJOR_DEFEND: usize = MAJOR_THREAT + MAJOR_PIECES;
 pub const MAJOR_ATTACK: usize = MAJOR_DEFEND + MAJOR_PIECES;
 pub const PAWN_THREAT: usize = MAJOR_ATTACK + MAJOR_PIECES;

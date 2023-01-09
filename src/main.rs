@@ -97,7 +97,7 @@ fn main() {
     }
     // outputting parameters
     println!("pub const MATERIAL: [S; 7] = {:?};", [&data.params[PAWN..=QUEEN], &[S::default(); 2]].concat());
-    println!("pub const PROGRESS: [S; 6] = {:?};", &data.params[PAWN_PROGRESSION..PAWN_PROGRESSION + 6]);
+    println!("pub const PROGRESS: [S; 5] = {:?};", &data.params[PAWN_PROGRESSION..PAWN_PROGRESSION + 5]);
     println!("pub const MAJOR_THREAT: [S; {MAJOR_PIECES}] = {:?};", &data.params[MAJOR_THREAT..MAJOR_THREAT + MAJOR_PIECES]);
     println!("pub const MAJOR_DEFEND: [S; {MAJOR_PIECES}] = {:?};", &data.params[MAJOR_DEFEND..MAJOR_DEFEND + MAJOR_PIECES]);
     println!("pub const MAJOR_ATTACK: [S; {MAJOR_PIECES}] = {:?};", &data.params[MAJOR_ATTACK..MAJOR_ATTACK + MAJOR_PIECES]);

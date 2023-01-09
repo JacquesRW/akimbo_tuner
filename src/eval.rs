@@ -1,6 +1,5 @@
 use crate::{consts::*, position::Position};
 
-macro_rules! pop_lsb {($idx:expr, $x:expr) => {$idx = $x.trailing_zeros() as u8; $x &= $x - 1}}
 macro_rules! count {($bb:expr) => {$bb.count_ones() as i16}}
 
 #[inline(always)]
@@ -59,17 +58,17 @@ struct MajorMobility {
 }
 
 fn major_mobility(pc: usize, mut attackers: u64, occ: u64, friends: u64, unprotected: u64, danger: &mut i16, ksqs: u64) -> MajorMobility {
-    let mut from: u8;
+    let mut from: usize;
     let mut attacks: u64;
     let mut ret: MajorMobility = MajorMobility::default();
-    attackers &= friends;
     while attackers > 0 {
-        pop_lsb!(from, attackers);
+        from = attackers.trailing_zeros() as usize;
+        attackers &= attackers - 1;
         attacks = match pc {
-            KNIGHT => NATT[from as usize],
-            BISHOP => batt(from as usize, occ),
-            ROOK => ratt(from as usize, occ),
-            QUEEN => ratt(from as usize, occ) | batt(from as usize, occ),
+            KNIGHT => NATT[from],
+            BISHOP => batt(from, occ),
+            ROOK => ratt(from, occ),
+            QUEEN => ratt(from, occ) | batt(from, occ),
             _ => unimplemented!("only implement the four major pieces"),
         };
         ret.threat += count!(attacks & (occ & !friends));
@@ -94,8 +93,8 @@ pub fn set_pos_vals(pos: &mut Position, bitboards: [[u64; 6]; 2], sides: [u64; 2
     let bp_att: u64 = ((bp & !FILE) >> 9) | ((bp & NOTH) >> 7);
 
     // pawn progression
-    for i in 0..6 {
-        pos.vals[PAWN_PROGRESSION + i] = count!(wp & PAWN_RANKS[i]) - count!(bp & PAWN_RANKS[5 - i]);
+    for i in 0..5 {
+        pos.vals[PAWN_PROGRESSION + i] = count!(wp & PAWN_RANKS[i + 1]) - count!(bp & PAWN_RANKS[4 - i]);
     }
 
     // king danger stuff
