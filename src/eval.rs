@@ -131,19 +131,14 @@ pub fn set_pos_vals(pos: &mut Position, bitboards: [[u64; 6]; 2], sides: [u64; 2
     pos.vals[PAWN_SHIELD] = count!(wp & wking_sqs) - count!(bp & bking_sqs);
 
     // passed pawns
-    let mut fspans = bspans(bp);
-    fspans |= (fspans & NOTH) >> 1 | (fspans & !FILE) << 1;
-    let passers = count!(wp & !fspans);
-    fspans = wspans(wp);
-    fspans |= (fspans & NOTH) >> 1 | (fspans & !FILE) << 1;
-    pos.vals[PAWN_PASSED] = passers - count!(bp & !fspans);
+    pos.vals[PAWN_PASSED] = count!(wp & !bspans(bp | bp_att)) - count!(bp & !wspans(wp | wp_att));
 
     // doubled and isolated pawns
     for file in 0..8 {
         let wc: i16 = count!(FILES[file] & wp);
         let bc: i16 = count!(FILES[file] & bp);
         pos.vals[PAWN_DOUBLE] += wc.saturating_sub(1) - bc.saturating_sub(1);
-        pos.vals[PAWN_ISOLATED] += i16::from(wc > 0 && RAILS[file] & wp == 0) - i16::from(bc > 0 && RAILS[file] & bp == 0);
+        pos.vals[PAWN_ISOLATED] += i16::from(RAILS[file] & wp == 0) * wc - i16::from(RAILS[file] & bp == 0) * bc;
     }
 
     // bishop pair bonus
