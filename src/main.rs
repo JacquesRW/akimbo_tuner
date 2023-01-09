@@ -3,7 +3,6 @@ mod score;
 mod eval;
 mod position;
 
-pub use eval::NUM_PARAMS;
 use consts::*;
 use score::S;
 use position::Position;
@@ -99,9 +98,9 @@ fn main() {
     // outputting parameters
     println!("pub const MATERIAL: [S; 7] = {:?};", [&data.params[PAWN..=QUEEN], &[S::default(); 2]].concat());
     println!("pub const PROGRESS: [S; 6] = {:?};", &data.params[PAWN_PROGRESSION..PAWN_PROGRESSION + 6]);
-    println!("pub const MAJOR_THREAT: [S; 4] = {:?};", &data.params[MAJOR_THREAT..MAJOR_THREAT + 4]);
-    println!("pub const MAJOR_DEFEND: [S; 4] = {:?};", &data.params[MAJOR_DEFEND..MAJOR_DEFEND + 4]);
-    println!("pub const MAJOR_ATTACK: [S; 4] = {:?};", &data.params[MAJOR_ATTACK..MAJOR_ATTACK + 4]);
+    println!("pub const MAJOR_THREAT: [S; {MAJOR_PIECES}] = {:?};", &data.params[MAJOR_THREAT..MAJOR_THREAT + MAJOR_PIECES]);
+    println!("pub const MAJOR_DEFEND: [S; {MAJOR_PIECES}] = {:?};", &data.params[MAJOR_DEFEND..MAJOR_DEFEND + MAJOR_PIECES]);
+    println!("pub const MAJOR_ATTACK: [S; {MAJOR_PIECES}] = {:?};", &data.params[MAJOR_ATTACK..MAJOR_ATTACK + MAJOR_PIECES]);
     println!("pub const PAWN_THREAT: S = {:?};", &data.params[PAWN_THREAT]);
     println!("pub const PAWN_DEFEND: S = {:?};", &data.params[PAWN_DEFEND]);
     println!("pub const PAWN_SHIELD: S = {:?};", &data.params[PAWN_SHIELD]);

@@ -1,7 +1,5 @@
 use crate::{consts::*, position::Position};
 
-pub const NUM_PARAMS: usize = 29;
-
 macro_rules! pop_lsb {($idx:expr, $x:expr) => {$idx = $x.trailing_zeros() as u8; $x &= $x - 1}}
 macro_rules! count {($bb:expr) => {$bb.count_ones() as i16}}
 
@@ -69,9 +67,9 @@ fn major_mobility(pc: usize, mut attackers: u64, occ: u64, friends: u64, unprote
         pop_lsb!(from, attackers);
         attacks = match pc {
             KNIGHT => NATT[from as usize],
-            ROOK => ratt(from as usize, occ),
             BISHOP => batt(from as usize, occ),
-            QUEEN => ratt(from as usize, occ) | batt(from as usize, occ),
+            ROOK => ratt(from as usize, occ),
+            //QUEEN => ratt(from as usize, occ) | batt(from as usize, occ),
             _ => unimplemented!("only implement the four major pieces"),
         };
         ret.threats += count!(attacks & (occ & !friends)); // threats
@@ -107,13 +105,13 @@ pub fn set_pos_vals(pos: &mut Position, bitboards: [[u64; 6]; 2], sides: [u64; 2
     let bking_sqs: u64 = KATT[bitboards[BLACK][KING].trailing_zeros() as usize];
 
     // set major piece mobility values
-    for i in 0..4 {
+    for i in 0..MAJOR_PIECES {
         let idx: usize = MAJOR_THREAT + i;
         let w_maj_mob: MajorMobility = major_mobility(i + 1, bitboards[WHITE][i + 1], occ, sides[WHITE], !bp_att, &mut bking_danger, bking_sqs);
         let b_maj_mob: MajorMobility = major_mobility(i + 1, bitboards[BLACK][i + 1], occ, sides[BLACK], !wp_att, &mut wking_danger, wking_sqs);
         pos.vals[idx] = w_maj_mob.threats - b_maj_mob.threats;
-        pos.vals[idx + 4] = w_maj_mob.supports - b_maj_mob.supports;
-        pos.vals[idx + 8] = w_maj_mob.controls - b_maj_mob.controls;
+        pos.vals[idx + MAJOR_PIECES] = w_maj_mob.supports - b_maj_mob.supports;
+        pos.vals[idx + MAJOR_PIECES * 2] = w_maj_mob.controls - b_maj_mob.controls;
     }
 
     // set pawn and king danger values
