@@ -53,9 +53,9 @@ fn ratt(idx: usize, occ: u64) -> u64 {
 
 #[derive(Default)]
 struct MajorMobility {
-    threats: i16,
-    supports: i16,
-    controls: i16,
+    threat: i16,
+    defend: i16,
+    attack: i16,
 }
 
 fn major_mobility(pc: usize, mut attackers: u64, occ: u64, friends: u64, unprotected: u64, danger: &mut i16, ksqs: u64) -> MajorMobility {
@@ -72,9 +72,9 @@ fn major_mobility(pc: usize, mut attackers: u64, occ: u64, friends: u64, unprote
             QUEEN => ratt(from as usize, occ) | batt(from as usize, occ),
             _ => unimplemented!("only implement the four major pieces"),
         };
-        ret.threats += count!(attacks & (occ & !friends)); // threats
-        ret.supports += count!(attacks & friends); // supports
-        ret.controls += count!(attacks & (!occ & unprotected)); // other safe mobility
+        ret.threat += count!(attacks & (occ & !friends));
+        ret.defend += count!(attacks & friends);
+        ret.attack += count!(attacks & (!occ & unprotected));
         *danger += count!(attacks & ksqs);
     }
     ret
@@ -106,12 +106,11 @@ pub fn set_pos_vals(pos: &mut Position, bitboards: [[u64; 6]; 2], sides: [u64; 2
 
     // set major piece mobility values
     for i in 0..MAJOR_PIECES {
-        let idx: usize = MAJOR_THREAT + i;
         let w_maj_mob: MajorMobility = major_mobility(i + 1, bitboards[WHITE][i + 1], occ, sides[WHITE], !bp_att, &mut bking_danger, bking_sqs);
         let b_maj_mob: MajorMobility = major_mobility(i + 1, bitboards[BLACK][i + 1], occ, sides[BLACK], !wp_att, &mut wking_danger, wking_sqs);
-        pos.vals[idx] = w_maj_mob.threats - b_maj_mob.threats;
-        pos.vals[idx + MAJOR_PIECES] = w_maj_mob.supports - b_maj_mob.supports;
-        pos.vals[idx + MAJOR_PIECES * 2] = w_maj_mob.controls - b_maj_mob.controls;
+        pos.vals[MAJOR_THREAT + i] = w_maj_mob.threat - b_maj_mob.threat;
+        pos.vals[MAJOR_DEFEND + i] = w_maj_mob.defend - b_maj_mob.defend;
+        pos.vals[MAJOR_ATTACK + i] = w_maj_mob.attack - b_maj_mob.attack;
     }
 
     // set pawn and king danger values
