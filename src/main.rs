@@ -102,7 +102,6 @@ fn main() {
     println!("pub const MAJOR_THREAT: [S; {MAJOR_PIECES}] = {:?};", &data.params[MAJOR_THREAT..MAJOR_THREAT + MAJOR_PIECES]);
     println!("pub const MAJOR_DEFEND: [S; {MAJOR_PIECES}] = {:?};", &data.params[MAJOR_DEFEND..MAJOR_DEFEND + MAJOR_PIECES]);
     println!("pub const MAJOR_ATTACK: [S; {MAJOR_PIECES}] = {:?};", &data.params[MAJOR_ATTACK..MAJOR_ATTACK + MAJOR_PIECES]);
-    println!("pub const PIECE_SHIELD: S = {:?};", &data.params[PIECE_SHIELD]);
     println!("pub const PAWN_SHIELD: S = {:?};", &data.params[PAWN_SHIELD]);
     println!("pub const PAWN_PASSED: S = {:?};", &data.params[PAWN_PASSED]);
     println!("pub const KING_DANGER: S = {:?};", &data.params[KING_DANGER]);

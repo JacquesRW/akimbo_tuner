@@ -10,8 +10,7 @@ pub const KING_RANKS: usize = 10;
 pub const MAJOR_THREAT: usize = KING_RANKS + 8;
 pub const MAJOR_DEFEND: usize = MAJOR_THREAT + MAJOR_PIECES;
 pub const MAJOR_ATTACK: usize = MAJOR_DEFEND + MAJOR_PIECES;
-pub const PIECE_SHIELD: usize = MAJOR_ATTACK + MAJOR_PIECES;
-pub const PAWN_SHIELD: usize = PIECE_SHIELD + 1;
+pub const PAWN_SHIELD: usize = MAJOR_ATTACK + MAJOR_PIECES;
 pub const PAWN_PASSED: usize = PAWN_SHIELD + 1;
 pub const KING_DANGER: usize = PAWN_PASSED + 1;
 

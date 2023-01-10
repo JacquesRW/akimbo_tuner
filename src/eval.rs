@@ -134,7 +134,6 @@ pub fn set_pos_vals(pos: &mut Position, bitboards: [[u64; 6]; 2], sides: [u64; 2
     // set king safety values
     pos.vals[KING_DANGER] = wking_danger - bking_danger;
     pos.vals[PAWN_SHIELD] = count!(wp & wking_sqs) - count!(bp & bking_sqs);
-    pos.vals[PIECE_SHIELD] = count!((sides[WHITE] ^ wp) & wking_sqs) - count!((sides[BLACK] ^ bp) & bking_sqs);
 
     // passed pawns
     pos.vals[PAWN_PASSED] = count!(wp & !bspans(bp | bp_att)) - count!(bp & !wspans(wp | wp_att));
