@@ -97,11 +97,17 @@ pub fn set_pos_vals(pos: &mut Position, bitboards: [[u64; 6]; 2], sides: [u64; 2
         pos.vals[PAWN_PROGRESSION + i] = count!(wp & PAWN_RANKS[i + 1]) - count!(bp & PAWN_RANKS[4 - i]);
     }
 
+    // king position
+    let wking_idx: usize = bitboards[WHITE][KING].trailing_zeros() as usize;
+    let bking_idx: usize = bitboards[BLACK][KING].trailing_zeros() as usize;
+    pos.vals[KING_RANKS + wking_idx / 8] = 1;
+    pos.vals[KING_RANKS + bking_idx / 8] = -1;
+
     // king danger stuff
     let mut wking_danger: i16 = 0;
     let mut bking_danger: i16 = 0;
-    let wking_sqs: u64 = KATT[bitboards[WHITE][KING].trailing_zeros() as usize];
-    let bking_sqs: u64 = KATT[bitboards[BLACK][KING].trailing_zeros() as usize];
+    let wking_sqs: u64 = KATT[wking_idx];
+    let bking_sqs: u64 = KATT[bking_idx];
 
     // set major piece mobility values
     for i in 0..MAJOR_PIECES {
@@ -125,9 +131,10 @@ pub fn set_pos_vals(pos: &mut Position, bitboards: [[u64; 6]; 2], sides: [u64; 2
         pos.vals[MAJOR_ATTACK + i] = w_maj_mob.attack - b_maj_mob.attack;
     }
 
-    // set pawn and king danger values
+    // set king safety values
     pos.vals[KING_DANGER] = wking_danger - bking_danger;
     pos.vals[PAWN_SHIELD] = count!(wp & wking_sqs) - count!(bp & bking_sqs);
+    pos.vals[PIECE_SHIELD] = count!((sides[WHITE] ^ wp) & wking_sqs) - count!((sides[BLACK] ^ bp) & bking_sqs);
 
     // passed pawns
     pos.vals[PAWN_PASSED] = count!(wp & !bspans(bp | bp_att)) - count!(bp & !wspans(wp | wp_att));
