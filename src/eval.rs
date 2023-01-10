@@ -79,7 +79,7 @@ fn major_mobility(pc: usize, mut attackers: u64, occ: u64, friends: u64) -> Majo
 pub fn set_pos_vals(pos: &mut Position, bitboards: [[u64; 6]; 2], sides: [u64; 2]) {
     // set material vals
     for i in PAWN..=QUEEN {
-        pos.vals[i] = bitboards[WHITE][i].count_ones() as i16 - bitboards[BLACK][i].count_ones() as i16;
+        pos.vals[i] = count!(bitboards[WHITE][i])- count!(bitboards[BLACK][i]);
     }
 
     // pawn stuff
