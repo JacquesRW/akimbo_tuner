@@ -101,7 +101,7 @@ pub fn set_pos_vals(pos: &mut Position, bitboards: [[u64; 6]; 2], sides: [u64; 2
     let wking_idx: usize = bitboards[WHITE][KING].trailing_zeros() as usize;
     let bking_idx: usize = bitboards[BLACK][KING].trailing_zeros() as usize;
     pos.vals[KING_RANKS + wking_idx / 8] = 1;
-    pos.vals[KING_RANKS + bking_idx / 8] = -1;
+    pos.vals[KING_RANKS + 7 - bking_idx / 8] = -1;
 
     // king danger stuff
     let mut wking_danger: i16 = 0;
