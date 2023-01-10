@@ -104,7 +104,7 @@ fn main() {
     println!("pub const PAWN_SHIELD: S = {:?};", &data.params[PAWN_SHIELD]);
     println!("pub const PAWN_PASSED: S = {:?};", &data.params[PAWN_PASSED]);
     println!("pub const KNIGHT_OUTER: S = {:?};", &data.params[KNIGHT_OUTER]);
-    println!("pub const ROOK_PASSIVE: S = {:?};", &data.params[ROOK_PASSIVE]);
+    println!("pub const ROOK_AGGRESSIVE: S = {:?};", &data.params[ROOK_AGGRESSIVE]);
 
     // WAIT FOR EXIT
     stdin().read_line(&mut String::new()).expect("parsable");

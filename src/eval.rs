@@ -129,5 +129,5 @@ pub fn set_pos_vals(pos: &mut Position, bitboards: [[u64; 6]; 2], sides: [u64; 2
 
     // bad piece squares
     pos.vals[KNIGHT_OUTER] = count!(bitboards[WHITE][KNIGHT] & BAD_KNIGHT_SQUARES) - count!(bitboards[BLACK][KNIGHT] & BAD_KNIGHT_SQUARES);
-    pos.vals[ROOK_PASSIVE] = count!(bitboards[WHITE][ROOK] & WHITE_HALF) - count!(bitboards[BLACK][ROOK] & BLACK_HALF);
+    pos.vals[ROOK_AGGRESSIVE] = count!(bitboards[WHITE][ROOK] & BLACK_CAMP) - count!(bitboards[BLACK][ROOK] & WHITE_CAMP);
 }
