@@ -101,18 +101,21 @@ pub fn set_pos_vals(pos: &mut Position, bitboards: [[u64; 6]; 2], sides: [u64; 2
     pos.vals[KING_RANKS + 7 - bking_idx / 8] = -1;
 
     // set major piece mobility values
-    for i in 0..MAJOR_PIECES {
-        // rooks don't block each other, rooks and bishops don't block queen, queen blocks nothing
+    let q: u64 = bitboards[WHITE][QUEEN] | bitboards[BLACK][QUEEN];
+    for i in 0..MAJOR_PIECES { // all ignore enemy king
         let (tw, tb): (u64, u64) = match i + 1 {
-            ROOK => (
-                bitboards[WHITE][ROOK] ^ bitboards[WHITE][QUEEN] ^ bitboards[BLACK][KING],
-                bitboards[BLACK][ROOK] ^ bitboards[BLACK][QUEEN] ^ bitboards[WHITE][KING],
+            ROOK => ( // friendly rooks compliment each other, enemy queens will move away so dont block
+                bitboards[WHITE][ROOK] ^ bitboards[BLACK][KING] ^ q,
+                bitboards[BLACK][ROOK] ^ bitboards[WHITE][KING] ^ q,
             ),
-            QUEEN => (
-                bitboards[WHITE][BISHOP] ^ bitboards[WHITE][ROOK] ^ bitboards[WHITE][QUEEN] ^ bitboards[BLACK][KING],
-                bitboards[BLACK][BISHOP] ^ bitboards[BLACK][ROOK] ^ bitboards[BLACK][QUEEN] ^ bitboards[WHITE][KING],
+            QUEEN => ( // ignore friendly rooks and bishops
+                bitboards[WHITE][BISHOP] ^ bitboards[WHITE][ROOK] ^ bitboards[BLACK][KING],
+                bitboards[BLACK][BISHOP] ^ bitboards[BLACK][ROOK] ^ bitboards[WHITE][KING],
             ),
-            BISHOP => (bitboards[WHITE][QUEEN] ^ bitboards[BLACK][KING] ,bitboards[BLACK][QUEEN] ^ bitboards[WHITE][KING]),
+            BISHOP => ( // enemy rooks and queens will move out of the way so dont block
+                bitboards[BLACK][KING] ^ bitboards[BLACK][ROOK] ^ q,
+                bitboards[WHITE][KING] ^ bitboards[WHITE][ROOK] ^ q,
+            ),
             _ => (0, 0)
         };
         let w_maj_mob: MajorMobility = major_mobility(i + 1, bitboards[WHITE][i + 1], occ ^ tw, sides[WHITE]);
