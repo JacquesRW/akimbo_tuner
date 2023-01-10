@@ -1,7 +1,7 @@
 pub const TPHASE: i32 = 24;
 
 // number of things
-pub const NUM_PARAMS: usize = BISHOP_PAIR + 1;
+pub const NUM_PARAMS: usize = PAWN_ISOLATED + 1;
 pub const MAJOR_PIECES: usize = 4;
 
 // storage locations of certain features
@@ -9,13 +9,10 @@ pub const PAWN_PROGRESSION: usize = 5;
 pub const MAJOR_THREAT: usize = 10;
 pub const MAJOR_DEFEND: usize = MAJOR_THREAT + MAJOR_PIECES;
 pub const MAJOR_ATTACK: usize = MAJOR_DEFEND + MAJOR_PIECES;
-pub const PAWN_THREAT: usize = MAJOR_ATTACK + MAJOR_PIECES;
-pub const PAWN_DEFEND: usize = PAWN_THREAT + 1;
-pub const PAWN_SHIELD: usize = PAWN_DEFEND + 1;
+pub const PAWN_SHIELD: usize = MAJOR_ATTACK + MAJOR_PIECES;
 pub const PAWN_PASSED: usize = PAWN_SHIELD + 1;
-pub const KING_SAFETY: usize = PAWN_PASSED + 1;
-pub const PAWN_ISOLATED: usize = KING_SAFETY + 1;
-pub const BISHOP_PAIR: usize = PAWN_ISOLATED + 1;
+pub const KING_DANGER: usize = PAWN_PASSED + 1;
+pub const PAWN_ISOLATED: usize = KING_DANGER + 1;
 
 // pieces
 pub const PAWN: usize = 0;

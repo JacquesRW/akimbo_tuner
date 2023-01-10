@@ -57,7 +57,7 @@ struct MajorMobility {
     attack: i16,
 }
 
-fn major_mobility(pc: usize, mut attackers: u64, occ: u64, friends: u64, danger: &mut i16, ksqs: u64, np_att: u64) -> MajorMobility {
+fn major_mobility(pc: usize, mut attackers: u64, occ: u64, friends: u64, danger: &mut i16, ksqs: u64) -> MajorMobility {
     let mut from: usize;
     let mut attacks: u64;
     let mut ret: MajorMobility = MajorMobility::default();
@@ -73,7 +73,7 @@ fn major_mobility(pc: usize, mut attackers: u64, occ: u64, friends: u64, danger:
         };
         ret.threat += count!(attacks & (occ & !friends));
         ret.defend += count!(attacks & friends);
-        ret.attack += count!(attacks & (!occ & np_att));
+        ret.attack += count!(attacks & !occ);
         *danger += count!(attacks & ksqs);
     }
     ret
@@ -108,26 +108,25 @@ pub fn set_pos_vals(pos: &mut Position, bitboards: [[u64; 6]; 2], sides: [u64; 2
         // rooks don't block each other, rooks and bishops don't block queen, queen blocks nothing
         let (tw, tb): (u64, u64) = match i + 1 {
             ROOK => (
-                bitboards[WHITE][ROOK] ^ bitboards[WHITE][QUEEN],
-                bitboards[BLACK][ROOK] ^ bitboards[BLACK][QUEEN],
+                bitboards[WHITE][ROOK] ^ bitboards[WHITE][QUEEN] ^ bitboards[BLACK][KING],
+                bitboards[BLACK][ROOK] ^ bitboards[BLACK][QUEEN] ^ bitboards[WHITE][KING],
             ),
             QUEEN => (
-                bitboards[WHITE][BISHOP] ^ bitboards[WHITE][ROOK] ^ bitboards[WHITE][QUEEN],
-                bitboards[BLACK][BISHOP] ^ bitboards[BLACK][ROOK] ^ bitboards[BLACK][QUEEN],
+                bitboards[WHITE][BISHOP] ^ bitboards[WHITE][ROOK] ^ bitboards[WHITE][QUEEN] ^ bitboards[BLACK][KING],
+                bitboards[BLACK][BISHOP] ^ bitboards[BLACK][ROOK] ^ bitboards[BLACK][QUEEN] ^ bitboards[WHITE][KING],
             ),
-            _ => (bitboards[WHITE][QUEEN], bitboards[BLACK][QUEEN])
+            BISHOP => (bitboards[WHITE][QUEEN] ^ bitboards[BLACK][KING] ,bitboards[BLACK][QUEEN] ^ bitboards[WHITE][KING]),
+            _ => (0, 0)
         };
-        let w_maj_mob: MajorMobility = major_mobility(i + 1, bitboards[WHITE][i + 1], occ ^ tw, sides[WHITE], &mut bking_danger, bking_sqs, !bp_att);
-        let b_maj_mob: MajorMobility = major_mobility(i + 1, bitboards[BLACK][i + 1], occ ^ tb, sides[BLACK], &mut wking_danger, wking_sqs, !wp_att);
+        let w_maj_mob: MajorMobility = major_mobility(i + 1, bitboards[WHITE][i + 1], occ ^ tw, sides[WHITE], &mut bking_danger, bking_sqs);
+        let b_maj_mob: MajorMobility = major_mobility(i + 1, bitboards[BLACK][i + 1], occ ^ tb, sides[BLACK], &mut wking_danger, wking_sqs);
         pos.vals[MAJOR_THREAT + i] = w_maj_mob.threat - b_maj_mob.threat;
         pos.vals[MAJOR_DEFEND + i] = w_maj_mob.defend - b_maj_mob.defend;
         pos.vals[MAJOR_ATTACK + i] = w_maj_mob.attack - b_maj_mob.attack;
     }
 
     // set pawn and king danger values
-    pos.vals[KING_SAFETY] = wking_danger - bking_danger;
-    pos.vals[PAWN_THREAT] = count!(sides[BLACK] & wp_att) - count!(sides[WHITE] & bp_att);
-    pos.vals[PAWN_DEFEND] = count!(sides[WHITE] & wp_att) - count!(sides[BLACK] & bp_att);
+    pos.vals[KING_DANGER] = wking_danger - bking_danger;
     pos.vals[PAWN_SHIELD] = count!(wp & wking_sqs) - count!(bp & bking_sqs);
 
     // passed pawns
@@ -137,9 +136,4 @@ pub fn set_pos_vals(pos: &mut Position, bitboards: [[u64; 6]; 2], sides: [u64; 2
     for file in 0..8 {
         pos.vals[PAWN_ISOLATED] += i16::from(RAILS[file] & wp == 0) * count!(FILES[file] & wp) - i16::from(RAILS[file] & bp == 0) * count!(FILES[file] & bp);
     }
-
-    // bishop pair bonus
-    let wb: u64 = bitboards[WHITE][BISHOP];
-    let bb: u64 = bitboards[BLACK][BISHOP];
-    pos.vals[BISHOP_PAIR] = i16::from(wb & (wb - 1) > 0) - i16::from(bb & (bb - 1) > 0);
 }
