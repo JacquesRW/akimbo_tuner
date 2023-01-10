@@ -96,7 +96,7 @@ fn main() {
         println!("epoch {count} time {:.3}s error {best:.6}", time.elapsed().as_secs_f32());
     }
     // outputting parameters
-    println!("pub const MATERIAL: [S; 7] = {:?};", [&data.params[PAWN..=QUEEN], &[S::default(); 2]].concat());
+    println!("pub const MATERIAL: [S; 5] = {:?};", &data.params[PAWN..=QUEEN]);
     println!("pub const PROGRESS: [S; 5] = {:?};", &data.params[PAWN_PROGRESSION..PAWN_PROGRESSION + 5]);
     println!("pub const KING_RANKS: [S; 8] = {:?};", &data.params[KING_RANKS..KING_RANKS + 8]);
     println!("pub const MAJOR_THREAT: [S; {MAJOR_PIECES}] = {:?};", &data.params[MAJOR_THREAT..MAJOR_THREAT + MAJOR_PIECES]);

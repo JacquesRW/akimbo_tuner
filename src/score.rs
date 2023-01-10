@@ -36,8 +36,8 @@ impl S {
     pub const INIT: [Self; NUM_PARAMS] = {
         let mut ret = [Self(0, 0); NUM_PARAMS];
         ret[0] = Self(100, 100);
-        ret[1] = Self(300, 300);
-        ret[2] = Self(300, 300);
+        ret[1] = Self(320, 320);
+        ret[2] = Self(330, 330);
         ret[3] = Self(500, 500);
         ret[4] = Self(900, 900);
         ret
