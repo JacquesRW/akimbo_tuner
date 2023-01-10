@@ -52,12 +52,11 @@ fn ratt(idx: usize, occ: u64) -> u64 {
 
 #[derive(Default)]
 struct MajorMobility {
-    threat: i16,
     defend: i16,
     attack: i16,
 }
 
-fn major_mobility(pc: usize, mut attackers: u64, occ: u64, friends: u64, danger: &mut i16, ksqs: u64) -> MajorMobility {
+fn major_mobility(pc: usize, mut attackers: u64, occ: u64, friends: u64) -> MajorMobility {
     let mut from: usize;
     let mut attacks: u64;
     let mut ret: MajorMobility = MajorMobility::default();
@@ -71,10 +70,8 @@ fn major_mobility(pc: usize, mut attackers: u64, occ: u64, friends: u64, danger:
             QUEEN => ratt(from, occ) | batt(from, occ),
             _ => unimplemented!("only implement the four major pieces"),
         };
-        ret.threat += count!(attacks & (occ & !friends));
         ret.defend += count!(attacks & friends);
-        ret.attack += count!(attacks & !occ);
-        *danger += count!(attacks & ksqs);
+        ret.attack += count!(attacks & !friends);
     }
     ret
 }
@@ -103,12 +100,6 @@ pub fn set_pos_vals(pos: &mut Position, bitboards: [[u64; 6]; 2], sides: [u64; 2
     pos.vals[KING_RANKS + wking_idx / 8] = 1;
     pos.vals[KING_RANKS + 7 - bking_idx / 8] = -1;
 
-    // king danger stuff
-    let mut wking_danger: i16 = 0;
-    let mut bking_danger: i16 = 0;
-    let wking_sqs: u64 = KATT[wking_idx];
-    let bking_sqs: u64 = KATT[bking_idx];
-
     // set major piece mobility values
     for i in 0..MAJOR_PIECES {
         // rooks don't block each other, rooks and bishops don't block queen, queen blocks nothing
@@ -124,17 +115,19 @@ pub fn set_pos_vals(pos: &mut Position, bitboards: [[u64; 6]; 2], sides: [u64; 2
             BISHOP => (bitboards[WHITE][QUEEN] ^ bitboards[BLACK][KING] ,bitboards[BLACK][QUEEN] ^ bitboards[WHITE][KING]),
             _ => (0, 0)
         };
-        let w_maj_mob: MajorMobility = major_mobility(i + 1, bitboards[WHITE][i + 1], occ ^ tw, sides[WHITE], &mut bking_danger, bking_sqs);
-        let b_maj_mob: MajorMobility = major_mobility(i + 1, bitboards[BLACK][i + 1], occ ^ tb, sides[BLACK], &mut wking_danger, wking_sqs);
-        pos.vals[MAJOR_THREAT + i] = w_maj_mob.threat - b_maj_mob.threat;
+        let w_maj_mob: MajorMobility = major_mobility(i + 1, bitboards[WHITE][i + 1], occ ^ tw, sides[WHITE]);
+        let b_maj_mob: MajorMobility = major_mobility(i + 1, bitboards[BLACK][i + 1], occ ^ tb, sides[BLACK]);
         pos.vals[MAJOR_DEFEND + i] = w_maj_mob.defend - b_maj_mob.defend;
         pos.vals[MAJOR_ATTACK + i] = w_maj_mob.attack - b_maj_mob.attack;
     }
 
     // set king safety values
-    pos.vals[KING_DANGER] = wking_danger - bking_danger;
-    pos.vals[PAWN_SHIELD] = count!(wp & wking_sqs) - count!(bp & bking_sqs);
+    pos.vals[PAWN_SHIELD] = count!(wp & KATT[wking_idx]) - count!(bp & KATT[bking_idx]);
 
     // passed pawns
     pos.vals[PAWN_PASSED] = count!(wp & !bspans(bp | bp_att)) - count!(bp & !wspans(wp | wp_att));
+
+    // bad piece squares
+    pos.vals[KNIGHT_OUTER] = count!(bitboards[WHITE][KNIGHT] & BAD_KNIGHT_SQUARES) - count!(bitboards[BLACK][KNIGHT] & BAD_KNIGHT_SQUARES);
+    pos.vals[ROOK_PASSIVE] = count!(bitboards[WHITE][ROOK] & WHITE_HALF) - count!(bitboards[BLACK][ROOK] & BLACK_HALF);
 }

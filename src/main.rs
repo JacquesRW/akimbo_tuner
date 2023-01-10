@@ -99,12 +99,12 @@ fn main() {
     println!("pub const MATERIAL: [S; 5] = {:?};", &data.params[PAWN..=QUEEN]);
     println!("pub const PROGRESS: [S; 5] = {:?};", &data.params[PAWN_PROGRESSION..PAWN_PROGRESSION + 5]);
     println!("pub const KING_RANKS: [S; 8] = {:?};", &data.params[KING_RANKS..KING_RANKS + 8]);
-    println!("pub const MAJOR_THREAT: [S; {MAJOR_PIECES}] = {:?};", &data.params[MAJOR_THREAT..MAJOR_THREAT + MAJOR_PIECES]);
     println!("pub const MAJOR_DEFEND: [S; {MAJOR_PIECES}] = {:?};", &data.params[MAJOR_DEFEND..MAJOR_DEFEND + MAJOR_PIECES]);
     println!("pub const MAJOR_ATTACK: [S; {MAJOR_PIECES}] = {:?};", &data.params[MAJOR_ATTACK..MAJOR_ATTACK + MAJOR_PIECES]);
     println!("pub const PAWN_SHIELD: S = {:?};", &data.params[PAWN_SHIELD]);
     println!("pub const PAWN_PASSED: S = {:?};", &data.params[PAWN_PASSED]);
-    println!("pub const KING_DANGER: S = {:?};", &data.params[KING_DANGER]);
+    println!("pub const KNIGHT_OUTER: S = {:?};", &data.params[KNIGHT_OUTER]);
+    println!("pub const ROOK_PASSIVE: S = {:?};", &data.params[ROOK_PASSIVE]);
 
     // WAIT FOR EXIT
     stdin().read_line(&mut String::new()).expect("parsable");
