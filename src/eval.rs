@@ -131,9 +131,4 @@ pub fn set_pos_vals(pos: &mut Position, bitboards: [[u64; 6]; 2], sides: [u64; 2
 
     // passed pawns
     pos.vals[PAWN_PASSED] = count!(wp & !bspans(bp | bp_att)) - count!(bp & !wspans(wp | wp_att));
-
-    // doubled and isolated pawns
-    for file in 0..8 {
-        pos.vals[PAWN_ISOLATED] += i16::from(RAILS[file] & wp == 0) * count!(FILES[file] & wp) - i16::from(RAILS[file] & bp == 0) * count!(FILES[file] & bp);
-    }
 }

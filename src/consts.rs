@@ -37,8 +37,6 @@ pub const DIAGS: [u64; 15] = [
 
 // ranks that pawns can be on
 pub const PAWN_RANKS: [u64; 6] = [0xFF << 8, 0xFF << 16, 0xFF << 24, 0xFF << 32, 0xFF << 40, 0xFF << 48];
-pub const FILES: [u64; 8] = [FILE, FILE << 1, FILE << 2, FILE << 3, FILE << 4, FILE << 5, FILE << 6, FILE << 7];
-pub const RAILS: [u64; 8] = [FILES[1], FILES[0] | FILES[2], FILES[1] | FILES[3], FILES[2] | FILES[4], FILES[3] | FILES[5], FILES[4] | FILES[6], FILES[5] | FILES[7], FILES[6]];
 
 /// Macro for calculating tables (until const fn pointers are stable).
 macro_rules! init {
