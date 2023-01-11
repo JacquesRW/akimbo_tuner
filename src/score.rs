@@ -11,10 +11,10 @@ impl AddAssign<S> for S {
     }
 }
 
-impl Mul<S> for i16 {
+impl Mul<S> for i8 {
     type Output = S;
     fn mul(self, rhs: S) -> Self::Output {
-        S(self * rhs.0, self * rhs.1)
+        S(self as i16 * rhs.0, self as i16 * rhs.1)
     }
 }
 

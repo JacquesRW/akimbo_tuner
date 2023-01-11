@@ -107,9 +107,9 @@ fn main() {
         println!("{s}")
     }
     println!("];");
-    println!("pub const KING_RANKS: [S; 8] = {:?};", &data.params[KING_RANKS..KING_RANKS + 8]);
-    println!("pub const MAJOR_DEFEND: [S; {MAJOR_PIECES}] = {:?};", &data.params[MAJOR_DEFEND..MAJOR_DEFEND + MAJOR_PIECES]);
-    println!("pub const MAJOR_ATTACK: [S; {MAJOR_PIECES}] = {:?};", &data.params[MAJOR_ATTACK..MAJOR_ATTACK + MAJOR_PIECES]);
+    println!("pub const MOBILITY_KNIGHT: [S; {DISTINCT_KNIGHT_ATTACKS}] = {:?};", &data.params[MOBILITY_KNIGHT..MOBILITY_KNIGHT + DISTINCT_KNIGHT_ATTACKS]);
+    println!("pub const MOBILITY_BISHOP: [S; {DISTINCT_BISHOP_ATTACKS}] = {:?};", &data.params[MOBILITY_BISHOP..MOBILITY_BISHOP + DISTINCT_BISHOP_ATTACKS]);
+    println!("pub const MOBILITY_ROOK: [S; {DISTINCT_ROOK_ATTACKS}] = {:?};", &data.params[MOBILITY_ROOK..MOBILITY_ROOK + DISTINCT_ROOK_ATTACKS]);
     println!("pub const PAWN_SHIELD: S = {:?};", &data.params[PAWN_SHIELD]);
 
     // WAIT FOR EXIT

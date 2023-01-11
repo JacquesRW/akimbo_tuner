@@ -1,16 +1,20 @@
 pub const TPHASE: i32 = 24;
+pub const SF: [i8; 2] = [1, -1];
 
 // number of things
-pub const NUM_PARAMS: usize = PAWN_SHIELD + 1;
-pub const MAJOR_PIECES: usize = 3;
+pub const NUM_PARAMS: usize = MOBILITY_ROOK + DISTINCT_ROOK_ATTACKS;
 pub const PST_SQUARES: usize = 24;
+pub const DISTINCT_KNIGHT_ATTACKS: usize = 9;
+pub const DISTINCT_BISHOP_ATTACKS: usize = 14;
+pub const DISTINCT_ROOK_ATTACKS: usize = 15;
+pub const MAJOR_MOBILITY: [usize; 3] = [MOBILITY_KNIGHT, MOBILITY_BISHOP, MOBILITY_ROOK];
 
 // storage locations of certain features
 pub const PAWN_PST: usize = 5;
-pub const KING_RANKS: usize = PAWN_PST + PST_SQUARES;
-pub const MAJOR_DEFEND: usize = KING_RANKS + 8;
-pub const MAJOR_ATTACK: usize = MAJOR_DEFEND + MAJOR_PIECES;
-pub const PAWN_SHIELD: usize = MAJOR_ATTACK + MAJOR_PIECES;
+pub const PAWN_SHIELD: usize = PAWN_PST + PST_SQUARES;
+pub const MOBILITY_KNIGHT: usize = PAWN_SHIELD + 1;
+pub const MOBILITY_BISHOP: usize = MOBILITY_KNIGHT + DISTINCT_KNIGHT_ATTACKS;
+pub const MOBILITY_ROOK: usize = MOBILITY_BISHOP + DISTINCT_BISHOP_ATTACKS;
 
 // pieces
 pub const PAWN: usize = 0;

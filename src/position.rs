@@ -4,7 +4,7 @@ const CHARS: [char; 12] = ['P', 'N', 'B', 'R', 'Q', 'K', 'p', 'n', 'b', 'r', 'q'
 
 #[derive(Debug)]
 pub struct Position {
-    pub vals: [i16; NUM_PARAMS],
+    pub vals: [i8; NUM_PARAMS],
     phase: i16,
     result: f32,
 }
