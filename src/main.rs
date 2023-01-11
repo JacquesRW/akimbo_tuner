@@ -69,7 +69,7 @@ fn main() {
     let mut cache: [S; NUM_PARAMS] = [S::ONES; NUM_PARAMS];
     let mut improved: bool = true;
     let mut count = 0;
-    while improved && count < 5 {
+    while improved {
         time = Instant::now();
         improved = false;
         count += 1;
@@ -97,7 +97,6 @@ fn main() {
     }
     // outputting parameters
     println!("pub const MATERIAL: [S; 5] = {:?};", &data.params[PAWN..=QUEEN]);
-    //println!("pub const PAWN_PST: [S; 24] = {:?};", &data.params[PAWN_PST..PAWN_PST + PST_SQUARES]);
     println!("pub const PAWN_PST: [S; 24] = [");
     for i in 0..6 {
         let mut s = String::from("   ");
