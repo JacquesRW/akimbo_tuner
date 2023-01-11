@@ -1,6 +1,24 @@
 use crate::{consts::*, position::Position};
 
 macro_rules! count {($bb:expr) => {$bb.count_ones() as i16}}
+macro_rules! lsb {($x:expr) => {($x).trailing_zeros() as usize}}
+macro_rules! pull_lsb {($idx:expr, $x:expr) => {$idx = lsb!($x); $x &= $x - 1}}
+
+#[inline(always)]
+fn wspans(mut pwns: u64) -> u64 {
+    pwns |= pwns << 8;
+    pwns |= pwns << 16;
+    pwns |= pwns << 32;
+    pwns
+}
+
+#[inline(always)]
+fn bspans(mut pwns: u64) -> u64 {
+    pwns |= pwns >> 8;
+    pwns |= pwns >> 16;
+    pwns |= pwns >> 32;
+    pwns
+}
 
 fn batt(idx: usize, occ: u64) -> u64 {
     let m: Mask = BMASKS[idx];
@@ -39,8 +57,7 @@ fn major_mobility(pos: &mut Position, c: usize, pc: usize, mut attackers: u64, o
     let mut from: usize;
     let mut attacks: u64;
     while attackers > 0 {
-        from = attackers.trailing_zeros() as usize;
-        attackers &= attackers - 1;
+        pull_lsb!(from, attackers);
         attacks = match pc {
             KNIGHT => NATT[from],
             BISHOP => batt(from, occ),
@@ -61,28 +78,34 @@ pub fn set_pos_vals(pos: &mut Position, bitboards: [[u64; 6]; 2], sides: [u64; 2
 
     // pawn stuff
     let occ: u64 = sides[WHITE] | sides[BLACK];
-    let mut wp: u64 = bitboards[WHITE][PAWN];
-    let mut bp: u64 = bitboards[BLACK][PAWN];
+    let wp: u64 = bitboards[WHITE][PAWN];
+    let bp: u64 = bitboards[BLACK][PAWN];
     let wp_att: u64 = ((wp & !FILE) << 7) | ((wp & NOTH) << 9);
     let bp_att: u64 = ((bp & !FILE) >> 9) | ((bp & NOTH) >> 7);
 
     // king position
-    let wking_idx: usize = bitboards[WHITE][KING].trailing_zeros() as usize;
-    let bking_idx: usize = bitboards[BLACK][KING].trailing_zeros() as usize;
+    let wking_idx: usize = lsb!(bitboards[WHITE][KING]);
+    let bking_idx: usize = lsb!(bitboards[BLACK][KING]);
     let wk_sqs: u64 = KATT[wking_idx];
     let bk_sqs: u64 = KATT[bking_idx];
 
     // pawn shield
     pos.vals[PAWN_SHIELD] = count!(wp & wk_sqs) - count!(bp & bk_sqs);
 
+    // passed pawns
+    pos.vals[PAWN_PASSED] = count!(wp & !bspans(bp | bp_att)) - count!(bp & !wspans(wp | wp_att));
+
     // pawn pst
-    while wp > 0 {
-        pos.vals[PAWN_PST + PST_IDX[56 ^ wp.trailing_zeros() as usize] as usize] += 1;
-        wp &= wp - 1;
+    let mut idx: usize;
+    let mut p: u64 = wp;
+    while p > 0 {
+        pull_lsb!(idx, p);
+        pos.vals[PAWN_PST + PST_IDX[56 ^ idx] as usize] += 1;
     }
-    while bp > 0 {
-        pos.vals[PAWN_PST + PST_IDX[bp.trailing_zeros() as usize] as usize] -= 1;
-        bp &= bp - 1;
+    p = bp;
+    while p > 0 {
+        pull_lsb!(idx, p);
+        pos.vals[PAWN_PST + PST_IDX[idx] as usize] -= 1;
     }
 
     let mut wk_danger: i16 = 0;
