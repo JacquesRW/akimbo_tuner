@@ -2,22 +2,6 @@ use crate::{consts::*, position::Position};
 
 macro_rules! count {($bb:expr) => {$bb.count_ones() as i16}}
 
-#[inline(always)]
-fn wspans(mut pwns: u64) -> u64 {
-    pwns |= pwns << 8;
-    pwns |= pwns << 16;
-    pwns |= pwns << 32;
-    pwns << 8
-}
-
-#[inline(always)]
-fn bspans(mut pwns: u64) -> u64 {
-    pwns |= pwns >> 8;
-    pwns |= pwns >> 16;
-    pwns |= pwns >> 32;
-    pwns >> 8
-}
-
 fn batt(idx: usize, occ: u64) -> u64 {
     let m: Mask = BMASKS[idx];
     let mut f: u64 = occ & m.right;
@@ -86,8 +70,6 @@ pub fn set_pos_vals(pos: &mut Position, bitboards: [[u64; 6]; 2], sides: [u64; 2
     let occ: u64 = sides[WHITE] | sides[BLACK];
     let wp: u64 = bitboards[WHITE][PAWN];
     let bp: u64 = bitboards[BLACK][PAWN];
-    let wp_att: u64 = ((wp & !FILE) << 7) | ((wp & NOTH) << 9);
-    let bp_att: u64 = ((bp & !FILE) >> 9) | ((bp & NOTH) >> 7);
 
     // pawn progression
     for i in 0..5 {
@@ -126,11 +108,4 @@ pub fn set_pos_vals(pos: &mut Position, bitboards: [[u64; 6]; 2], sides: [u64; 2
 
     // set king safety values
     pos.vals[PAWN_SHIELD] = count!(wp & KATT[wking_idx]) - count!(bp & KATT[bking_idx]);
-
-    // passed pawns
-    pos.vals[PAWN_PASSED] = count!(wp & !bspans(bp | bp_att)) - count!(bp & !wspans(wp | wp_att));
-
-    // bad piece squares
-    pos.vals[KNIGHT_OUTER] = count!(bitboards[WHITE][KNIGHT] & BAD_KNIGHT_SQUARES) - count!(bitboards[BLACK][KNIGHT] & BAD_KNIGHT_SQUARES);
-    pos.vals[ROOK_AGGRESSIVE] = count!(bitboards[WHITE][ROOK] & BLACK_CAMP) - count!(bitboards[BLACK][ROOK] & WHITE_CAMP);
 }

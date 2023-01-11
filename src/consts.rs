@@ -1,8 +1,8 @@
 pub const TPHASE: i32 = 24;
 
 // number of things
-pub const NUM_PARAMS: usize = ROOK_AGGRESSIVE + 1;
-pub const MAJOR_PIECES: usize = 4;
+pub const NUM_PARAMS: usize = PAWN_SHIELD + 1;
+pub const MAJOR_PIECES: usize = 3;
 
 // storage locations of certain features
 pub const PAWN_PROGRESSION: usize = 5;
@@ -10,9 +10,6 @@ pub const KING_RANKS: usize = 10;
 pub const MAJOR_DEFEND: usize = KING_RANKS + 8;
 pub const MAJOR_ATTACK: usize = MAJOR_DEFEND + MAJOR_PIECES;
 pub const PAWN_SHIELD: usize = MAJOR_ATTACK + MAJOR_PIECES;
-pub const PAWN_PASSED: usize = PAWN_SHIELD + 1;
-pub const KNIGHT_OUTER: usize = PAWN_PASSED + 1;
-pub const ROOK_AGGRESSIVE: usize = KNIGHT_OUTER + 1;
 
 // pieces
 pub const PAWN: usize = 0;
@@ -37,11 +34,6 @@ pub const DIAGS: [u64; 15] = [
 
 // ranks that pawns can be on
 pub const PAWN_RANKS: [u64; 6] = [0xFF << 8, 0xFF << 16, 0xFF << 24, 0xFF << 32, 0xFF << 40, 0xFF << 48];
-
-// board regions
-pub const BAD_KNIGHT_SQUARES: u64 = 0xffc381818181c3ff;
-pub const WHITE_CAMP: u64 = 0xFFFF;
-pub const BLACK_CAMP: u64 = 0xFFFF << 48;
 
 /// Macro for calculating tables (until const fn pointers are stable).
 macro_rules! init {

@@ -102,9 +102,6 @@ fn main() {
     println!("pub const MAJOR_DEFEND: [S; {MAJOR_PIECES}] = {:?};", &data.params[MAJOR_DEFEND..MAJOR_DEFEND + MAJOR_PIECES]);
     println!("pub const MAJOR_ATTACK: [S; {MAJOR_PIECES}] = {:?};", &data.params[MAJOR_ATTACK..MAJOR_ATTACK + MAJOR_PIECES]);
     println!("pub const PAWN_SHIELD: S = {:?};", &data.params[PAWN_SHIELD]);
-    println!("pub const PAWN_PASSED: S = {:?};", &data.params[PAWN_PASSED]);
-    println!("pub const KNIGHT_OUTER: S = {:?};", &data.params[KNIGHT_OUTER]);
-    println!("pub const ROOK_AGGRESSIVE: S = {:?};", &data.params[ROOK_AGGRESSIVE]);
 
     // WAIT FOR EXIT
     stdin().read_line(&mut String::new()).expect("parsable");
