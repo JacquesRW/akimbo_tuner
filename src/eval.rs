@@ -1,6 +1,6 @@
 use crate::{consts::*, position::Position};
 
-macro_rules! count {($bb:expr) => {$bb.count_ones() as i8}}
+macro_rules! count {($bb:expr) => {$bb.count_ones() as i16}}
 
 fn batt(idx: usize, occ: u64) -> u64 {
     let m: Mask = BMASKS[idx];
@@ -34,7 +34,8 @@ fn ratt(idx: usize, occ: u64) -> u64 {
     f | e | w
 }
 
-fn major_mobility(pos: &mut Position, c: usize, pc: usize, mut attackers: u64, occ: u64, safe: u64) {
+#[allow(clippy::too_many_arguments)]
+fn major_mobility(pos: &mut Position, c: usize, pc: usize, mut attackers: u64, occ: u64, safe: u64, king_sqs: u64, danger: &mut i16) {
     let mut from: usize;
     let mut attacks: u64;
     while attackers > 0 {
@@ -46,8 +47,9 @@ fn major_mobility(pos: &mut Position, c: usize, pc: usize, mut attackers: u64, o
             ROOK => ratt(from, occ),
             QUEEN => ratt(from, occ) | batt(from, occ),
             _ => unimplemented!("only implement the four major pieces"),
-        } & safe;
-        pos.vals[MAJOR_MOBILITY[pc - 1] + count!(attacks) as usize] += SF[c];
+        };
+        if pc != QUEEN {pos.vals[MAJOR_MOBILITY[pc - 1] + count!(attacks & safe) as usize] += SF[c]}
+        *danger += count!(attacks & king_sqs);
     }
 }
 
@@ -67,9 +69,11 @@ pub fn set_pos_vals(pos: &mut Position, bitboards: [[u64; 6]; 2], sides: [u64; 2
     // king position
     let wking_idx: usize = bitboards[WHITE][KING].trailing_zeros() as usize;
     let bking_idx: usize = bitboards[BLACK][KING].trailing_zeros() as usize;
+    let wk_sqs: u64 = KATT[wking_idx];
+    let bk_sqs: u64 = KATT[bking_idx];
 
-    // set king safety values
-    pos.vals[PAWN_SHIELD] = count!(wp & KATT[wking_idx]) - count!(bp & KATT[bking_idx]);
+    // pawn shield
+    pos.vals[PAWN_SHIELD] = count!(wp & wk_sqs) - count!(bp & bk_sqs);
 
     // pawn pst
     while wp > 0 {
@@ -80,6 +84,9 @@ pub fn set_pos_vals(pos: &mut Position, bitboards: [[u64; 6]; 2], sides: [u64; 2
         pos.vals[PAWN_PST + PST_IDX[bp.trailing_zeros() as usize] as usize] -= 1;
         bp &= bp - 1;
     }
+
+    let mut wk_danger: i16 = 0;
+    let mut bk_danger: i16 = 0;
 
     // set major piece mobility values
     let q: u64 = bitboards[WHITE][QUEEN] | bitboards[BLACK][QUEEN];
@@ -99,7 +106,10 @@ pub fn set_pos_vals(pos: &mut Position, bitboards: [[u64; 6]; 2], sides: [u64; 2
             ),
             _ => (0, 0)
         };
-        major_mobility(pos, WHITE, i, bitboards[WHITE][i], occ ^ tw, !sides[WHITE] & !bp_att);
-        major_mobility(pos, BLACK, i, bitboards[BLACK][i], occ ^ tb, !sides[BLACK] & !wp_att);
+        major_mobility(pos, WHITE, i, bitboards[WHITE][i], occ ^ tw, !sides[WHITE] & !bp_att, bk_sqs, &mut bk_danger);
+        major_mobility(pos, BLACK, i, bitboards[BLACK][i], occ ^ tb, !sides[BLACK] & !wp_att, wk_sqs, &mut wk_danger);
     }
+
+    pos.vals[KING_LINEAR] = wk_danger - bk_danger;
+    pos.vals[KING_QUADRATIC] = wk_danger.pow(2) - bk_danger.pow(2);
 }

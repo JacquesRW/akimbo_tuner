@@ -111,6 +111,8 @@ fn main() {
     println!("pub const MOBILITY_BISHOP: [S; {DISTINCT_BISHOP_ATTACKS}] = {:?};", &data.params[MOBILITY_BISHOP..MOBILITY_BISHOP + DISTINCT_BISHOP_ATTACKS]);
     println!("pub const MOBILITY_ROOK: [S; {DISTINCT_ROOK_ATTACKS}] = {:?};", &data.params[MOBILITY_ROOK..MOBILITY_ROOK + DISTINCT_ROOK_ATTACKS]);
     println!("pub const PAWN_SHIELD: S = {:?};", &data.params[PAWN_SHIELD]);
+    println!("pub const KING_LINEAR: S = {:?};", &data.params[KING_LINEAR]);
+    println!("pub const KING_QUADRATIC: S = {:?};", &data.params[KING_QUADRATIC]);
 
     // WAIT FOR EXIT
     stdin().read_line(&mut String::new()).expect("parsable");

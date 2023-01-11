@@ -4,14 +4,14 @@ const CHARS: [char; 12] = ['P', 'N', 'B', 'R', 'Q', 'K', 'p', 'n', 'b', 'r', 'q'
 
 #[derive(Debug)]
 pub struct Position {
-    pub vals: [i8; NUM_PARAMS],
+    pub vals: [i16; NUM_VALS],
     phase: i16,
     result: f32,
 }
 
 impl Position {
     pub fn from_epd(epd: &str) -> Self {
-        let mut pos = Position { vals: [0; NUM_PARAMS], phase: 0, result: 0.0};
+        let mut pos = Position { vals: [0; NUM_VALS], phase: 0, result: 0.0};
         let (mut row, mut col): (u16, u16) = (7, 0);
         let mut bitboards: [[u64; 6]; 2] = [[0; 6]; 2];
         let mut sides: [u64; 2] = [0; 2];
@@ -40,7 +40,7 @@ impl Position {
     pub fn err(&self, k: f32, params: &[S; NUM_PARAMS]) -> f32 {
         let mut score = S::default();
         self.vals.iter().enumerate().for_each(|(i, &val)| score += val * params[i]);
-        let eval = score.taper(self.phase) as f32;
+        let eval: f32 = score.taper(self.phase) as f32;
         (self.result - 1.0 / (1.0 + 10f32.powf(-k * eval / 100.0))).powi(2)
     }
 }

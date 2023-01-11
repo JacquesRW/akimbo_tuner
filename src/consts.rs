@@ -1,8 +1,9 @@
 pub const TPHASE: i32 = 24;
-pub const SF: [i8; 2] = [1, -1];
+pub const SF: [i16; 2] = [1, -1];
 
 // number of things
-pub const NUM_PARAMS: usize = MOBILITY_ROOK + DISTINCT_ROOK_ATTACKS;
+pub const NUM_PARAMS: usize = KING_QUADRATIC + 1;
+pub const NUM_VALS: usize = NUM_PARAMS;
 pub const PST_SQUARES: usize = 24;
 pub const DISTINCT_KNIGHT_ATTACKS: usize = 9;
 pub const DISTINCT_BISHOP_ATTACKS: usize = 14;
@@ -15,6 +16,8 @@ pub const PAWN_SHIELD: usize = PAWN_PST + PST_SQUARES;
 pub const MOBILITY_KNIGHT: usize = PAWN_SHIELD + 1;
 pub const MOBILITY_BISHOP: usize = MOBILITY_KNIGHT + DISTINCT_KNIGHT_ATTACKS;
 pub const MOBILITY_ROOK: usize = MOBILITY_BISHOP + DISTINCT_BISHOP_ATTACKS;
+pub const KING_LINEAR: usize = MOBILITY_ROOK + DISTINCT_ROOK_ATTACKS;
+pub const KING_QUADRATIC: usize = KING_LINEAR + 1;
 
 // pieces
 pub const PAWN: usize = 0;

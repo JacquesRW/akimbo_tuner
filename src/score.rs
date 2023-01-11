@@ -18,6 +18,13 @@ impl Mul<S> for i8 {
     }
 }
 
+impl Mul<S> for i16 {
+    type Output = S;
+    fn mul(self, rhs: S) -> Self::Output {
+        S(self * rhs.0, self * rhs.1)
+    }
+}
+
 impl Index<bool> for S {
     type Output = i16;
     fn index(&self, index: bool) -> &Self::Output {
