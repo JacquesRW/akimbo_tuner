@@ -68,19 +68,27 @@ pub fn set_pos_vals(pos: &mut Position, bitboards: [[u64; 6]; 2], sides: [u64; 2
 
     // pawn stuff
     let occ: u64 = sides[WHITE] | sides[BLACK];
-    let wp: u64 = bitboards[WHITE][PAWN];
-    let bp: u64 = bitboards[BLACK][PAWN];
-
-    // pawn progression
-    for i in 0..5 {
-        pos.vals[PAWN_PROGRESSION + i] = count!(wp & PAWN_RANKS[i + 1]) - count!(bp & PAWN_RANKS[4 - i]);
-    }
+    let mut wp: u64 = bitboards[WHITE][PAWN];
+    let mut bp: u64 = bitboards[BLACK][PAWN];
 
     // king position
     let wking_idx: usize = bitboards[WHITE][KING].trailing_zeros() as usize;
     let bking_idx: usize = bitboards[BLACK][KING].trailing_zeros() as usize;
     pos.vals[KING_RANKS + wking_idx / 8] = 1;
     pos.vals[KING_RANKS + 7 - bking_idx / 8] = -1;
+
+    // set king safety values
+    pos.vals[PAWN_SHIELD] = count!(wp & KATT[wking_idx]) - count!(bp & KATT[bking_idx]);
+
+    // pawn pst
+    while wp > 0 {
+        pos.vals[PAWN_PST + PST_IDX[56 ^ wp.trailing_zeros() as usize] as usize] += 1;
+        wp &= wp - 1;
+    }
+    while bp > 0 {
+        pos.vals[PAWN_PST + PST_IDX[bp.trailing_zeros() as usize] as usize] -= 1;
+        bp &= bp - 1;
+    }
 
     // set major piece mobility values
     let q: u64 = bitboards[WHITE][QUEEN] | bitboards[BLACK][QUEEN];
@@ -105,7 +113,4 @@ pub fn set_pos_vals(pos: &mut Position, bitboards: [[u64; 6]; 2], sides: [u64; 2
         pos.vals[MAJOR_DEFEND + i] = w_maj_mob.defend - b_maj_mob.defend;
         pos.vals[MAJOR_ATTACK + i] = w_maj_mob.attack - b_maj_mob.attack;
     }
-
-    // set king safety values
-    pos.vals[PAWN_SHIELD] = count!(wp & KATT[wking_idx]) - count!(bp & KATT[bking_idx]);
 }

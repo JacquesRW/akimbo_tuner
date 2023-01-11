@@ -48,4 +48,8 @@ impl S {
         let p = phase as i32;
         (p * self.0 as i32 + (TPHASE - p) * self.1 as i32) / TPHASE
     }
+
+    pub fn fancy(&self) -> String {
+        format!("S({: >3},{: >4})", self.0, self.1)
+    }
 }

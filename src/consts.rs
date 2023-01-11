@@ -3,10 +3,11 @@ pub const TPHASE: i32 = 24;
 // number of things
 pub const NUM_PARAMS: usize = PAWN_SHIELD + 1;
 pub const MAJOR_PIECES: usize = 3;
+pub const PST_SQUARES: usize = 24;
 
 // storage locations of certain features
-pub const PAWN_PROGRESSION: usize = 5;
-pub const KING_RANKS: usize = 10;
+pub const PAWN_PST: usize = 5;
+pub const KING_RANKS: usize = PAWN_PST + PST_SQUARES;
 pub const MAJOR_DEFEND: usize = KING_RANKS + 8;
 pub const MAJOR_ATTACK: usize = MAJOR_DEFEND + MAJOR_PIECES;
 pub const PAWN_SHIELD: usize = MAJOR_ATTACK + MAJOR_PIECES;
@@ -31,9 +32,6 @@ pub const DIAGS: [u64; 15] = [
     0x2010080402010000, 0x4020100804020100, 0x8040201008040201, 0x0080402010080402, 0x0000804020100804,
     0x0000008040201008, 0x0000000080402010, 0x0000000000804020, 0x0000000000008040, 0x0000000000000080,
 ];
-
-// ranks that pawns can be on
-pub const PAWN_RANKS: [u64; 6] = [0xFF << 8, 0xFF << 16, 0xFF << 24, 0xFF << 32, 0xFF << 40, 0xFF << 48];
 
 /// Macro for calculating tables (until const fn pointers are stable).
 macro_rules! init {
@@ -88,3 +86,5 @@ pub struct Mask {
     pub left: u64,
     pub file: u64,
 }
+
+pub const PST_IDX: [u8; 64] = init!(idx, 0, (((idx / 8) * 4).saturating_sub((4 - ((idx & 7) > 3) as i16 - (idx & 7) as i16).unsigned_abs() as usize)) as u8);

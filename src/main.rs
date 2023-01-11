@@ -69,7 +69,7 @@ fn main() {
     let mut cache: [S; NUM_PARAMS] = [S::ONES; NUM_PARAMS];
     let mut improved: bool = true;
     let mut count = 0;
-    while improved {
+    while improved && count < 5 {
         time = Instant::now();
         improved = false;
         count += 1;
@@ -97,7 +97,17 @@ fn main() {
     }
     // outputting parameters
     println!("pub const MATERIAL: [S; 5] = {:?};", &data.params[PAWN..=QUEEN]);
-    println!("pub const PROGRESS: [S; 5] = {:?};", &data.params[PAWN_PROGRESSION..PAWN_PROGRESSION + 5]);
+    //println!("pub const PAWN_PST: [S; 24] = {:?};", &data.params[PAWN_PST..PAWN_PST + PST_SQUARES]);
+    println!("pub const PAWN_PST: [S; 24] = [");
+    for i in 0..6 {
+        let mut s = String::from("   ");
+        let row = &data.params[PAWN_PST + 4 * i .. PAWN_PST + 4 * (i + 1)];
+        for j in row {
+            s.push_str(format!(" {},", j.fancy()).as_str())
+        }
+        println!("{s}")
+    }
+    println!("];");
     println!("pub const KING_RANKS: [S; 8] = {:?};", &data.params[KING_RANKS..KING_RANKS + 8]);
     println!("pub const MAJOR_DEFEND: [S; {MAJOR_PIECES}] = {:?};", &data.params[MAJOR_DEFEND..MAJOR_DEFEND + MAJOR_PIECES]);
     println!("pub const MAJOR_ATTACK: [S; {MAJOR_PIECES}] = {:?};", &data.params[MAJOR_ATTACK..MAJOR_ATTACK + MAJOR_PIECES]);
